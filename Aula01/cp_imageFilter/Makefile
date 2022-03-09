@@ -1,5 +1,5 @@
 
-TARGETS = imageFilter, tchar
+TARGETS = imageFilter, tchar, thDotP
 
 CFLAGS = -Wall -O0
 
@@ -10,6 +10,9 @@ imageFilter: imageFilter.o
 
 tchar: tchar.o
 	gcc -o tchar tchar.o -lpthread
+
+thDotP: thDotP.o
+	gcc -o thDotP thDotP.o -lpthread
 
 clean:
 	rm -f $(TARGETS) *.o
