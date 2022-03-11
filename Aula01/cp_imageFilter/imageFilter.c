@@ -15,6 +15,18 @@
 #define HI(num)	(((num) & 0x0000FF00) << 8)
 #define LO(num)	((num) & 0x000000FF)
 
+typedef struct 
+{
+    unsigned int *h_idata;
+    unsigned int w;
+    unsigned int h;
+    float* filter;
+    unsigned int fw;
+    unsigned int fh; 
+    unsigned int* h_odata;
+} filterImageArgs;
+
+
 // loads grayscale image to parray from fname, 
 // allocates memory to parray and stores width, height and maxvalue of image through pwidth, pheight and pmaxgray
 int loadPGM(char* fname, unsigned int** parray, unsigned int *pwidth, unsigned int *pheight, unsigned int *pmaxgray)
@@ -153,7 +165,6 @@ int loadFilter(char* fname, float** parray, unsigned int *pwidth, unsigned int *
     return 0;
 }
 
-
 // filter image in h_idata using linear filter, stores result in h_odata
 void filterImage(unsigned int *h_idata, unsigned int w, unsigned int h, 
                 float* filter, unsigned int fw, unsigned int fh, 
@@ -185,12 +196,28 @@ void filterImage(unsigned int *h_idata, unsigned int w, unsigned int h,
     }
 }   
 
+void *filterImageTH(void *afargs)
+{
+    filterImageArgs fargs = *((filterImageArgs *)afargs);
+
+    unsigned int *h_idata = fargs.h_idata;
+    unsigned int w = fargs.w;
+    unsigned int h = fargs.h ;
+    float* filter = fargs.filter;
+    unsigned int fw = fargs.fw;
+    unsigned int fh = fargs.fh;
+    unsigned int* h_odata = fargs.h_odata;
+
+    filterImage(h_idata, w, h, filter, fw, fh, h_odata);
+    pthread_exit(NULL);
+}
+
 
 
 // print command line format
 void usage(char *command) 
 {
-    printf("Usage: %s [-h] [-i inputfile] [-o outputfile] [-f filterfile] [-t nthreads]\n",command);
+    printf("Usage: %s [-h] [-i inputfile] [-o outputfile] [-f filterfile] [-t nthreads] [-m mode]\n",command);
 }
 
 // main
@@ -207,10 +234,11 @@ int main( int argc, char** argv)
     char *fileIn="lena.pgm",*fileOut="lenaOut.pgm",*fileFilter="filter.txt";
 
     int nthreads = 1;
+    int mode = 1;
 
     // parse command line arguments
     int opt;
-    while( (opt = getopt(argc,argv,"i:o:f:h:t:")) !=-1)
+    while( (opt = getopt(argc,argv,"i:o:f:h:t:m:")) !=-1)
     {
         switch(opt)
         {
@@ -251,6 +279,14 @@ int main( int argc, char** argv)
                 }
                 nthreads = atoi(optarg);
                 break;
+            case 'm': // MODE: 0 - normal, 1 - threads for vertical, 2 - threads for horizontal, 3 - sucessive pixels
+                if(strlen(optarg)==0)
+                {
+                    usage(argv[0]);
+                    exit(1);
+                }
+                mode = atoi(optarg);
+                break;
 
 
         }
@@ -276,40 +312,131 @@ int main( int argc, char** argv)
 
     // allocate mem for the result
     h_odata   = (unsigned int*) malloc( h*w*sizeof(unsigned int));
+    printf("w=%d, h=%d\n", w,h);
  
     struct timeval start, end;
     gettimeofday(&start, NULL);
 
-    __uint8_t mode = 0; // 0 - normal, 1 - threads for vertical, 2 - threads for horizontal, 3 - sucessive pixels
+    pthread_t ths[1024];
+    int rc;
 
 
     // filter image
-    if (mode == 0) filterImage(h_idata, w, h, filter, fw, fh, h_odata); 
+    if (nthreads == 1 ) filterImage(h_idata, w, h, filter, fw, fh, h_odata); 
     else if (mode == 1)
     {
+        if (nthreads > w) nthreads = w;
         // Multithread filtering (vertical strips)
         unsigned int w1 = w/nthreads;
         unsigned int wlast = w-(w1*(nthreads-1));
 
-        for (size_t i = 0; i < nthreads-1; i++){
-            filterImage(&h_idata[w1*i], w1, h, filter, fw, fh, &h_odata[w1*i]); 
+        for (int i = 0; i < nthreads-1; i++){
+
+            filterImageArgs fargs;
+            fargs.h_idata = &h_idata[w1*i];
+            fargs.w = w1;
+            fargs.h = h;
+            fargs.filter = filter;
+            fargs.fw = fw;
+            fargs.fh = fh;
+            fargs.h_odata = &h_odata[w1*i];
+
+
+            rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
+            if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
+
+            // filterImage(&h_idata[w1*i], w1, h, filter, fw, fh, &h_odata[w1*i]); 
         }
-        filterImage(&h_idata[w1*nthreads], wlast, h, filter, fw, fh, &h_odata[w1*nthreads]); 
+        int i = nthreads-1;
+        filterImageArgs fargs;
+        fargs.h_idata = &h_idata[w1*i];
+        fargs.w = wlast;
+        fargs.h = h;
+        fargs.filter = filter;
+        fargs.fw = fw;
+        fargs.fh = fh;
+        fargs.h_odata = &h_odata[w1*i];
+
+        rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
+        if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
+
+        // filterImage(&h_idata[w1*nthreads], wlast, h, filter, fw, fh, &h_odata[w1*nthreads]); 
     }
     else if (mode == 2)
     {
+        if (nthreads > h) nthreads = h;
+
         // Multithread filtering (horizontal strips)
         unsigned int h1 = h/nthreads;
         unsigned int hlast = h-(h1*(nthreads-1));
 
-        for (size_t i = 0; i < nthreads-1; i++){
-            filterImage(&h_idata[w*h1*i], w, h1, filter, fw, fh, &h_odata[w*h1*i]); 
+        for (int i = 0; i < nthreads-1; i++){
+
+            filterImageArgs fargs;
+            fargs.h_idata = &h_idata[w*h1*i];
+            fargs.w = w;
+            fargs.h = h1;
+            fargs.filter = filter;
+            fargs.fw = fw;
+            fargs.fh = fh;
+            fargs.h_odata = &h_odata[w*h1*i];
+
+
+            rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
+            if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
+
         }
-        filterImage(&h_idata[w*h1*nthreads], w, hlast, filter, fw, fh, &h_odata[w*h1*nthreads]); 
+        int i = nthreads-1;
+        filterImageArgs fargs;
+        fargs.h_idata = &h_idata[w*h1*i];
+        fargs.w = w;
+        fargs.h = hlast;
+        fargs.filter = filter;
+        fargs.fw = fw;
+        fargs.fh = fh;
+        fargs.h_odata = &h_odata[w*h1*i];
+
+        
+        rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
+        if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
+
+        // filterImage(&h_idata[w*h1*nthreads], w, hlast, filter, fw, fh, &h_odata[w*h1*nthreads]); 
     }
     else if (mode == 3)
     {
-        // Multithread filtering (sucesssive pixels)
+        if (nthreads > w*h) nthreads = w*h;
+
+        // Multithread filtering (sucesssive pixels) . by considering that successive pixels in each line 
+        // will be processed by different successive threads.
+
+        int i = 0;
+        for (int k = 0; k < w; k++){
+            for (int l = 0; l < h; l++){
+                
+                filterImageArgs fargs;
+                fargs.h_idata = &h_idata[k+l*w];
+                fargs.w = 1;
+                fargs.h = 1;
+                fargs.filter = filter;
+                fargs.fw = fw;
+                fargs.fh = fh;
+                fargs.h_odata = &h_odata[k+l*w];
+
+
+                rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
+                if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
+                i++;
+                i %= nthreads;
+                pthread_join(ths[i],NULL);
+            }
+        }
+
+    }
+    if (mode != 3){
+        for (int i = 0; i < nthreads; i++)
+        {
+            pthread_join(ths[i],NULL);
+        }
     }
 
     

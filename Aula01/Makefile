@@ -1,12 +1,12 @@
 
-TARGETS = imageFilter tchar thDotP
+TARGETS = imageFilter, tchar, thDotP
 
 CFLAGS = -Wall -O0
 
 all: $(TARGETS)
 
 imageFilter: imageFilter.o
-	gcc -o imageFilter imageFilter.o -pthread
+	gcc -o imageFilter imageFilter.o
 
 tchar: tchar.o
 	gcc -o tchar tchar.o -pthread
