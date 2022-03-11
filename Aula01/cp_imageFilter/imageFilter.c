@@ -190,7 +190,7 @@ void filterImage(unsigned int *h_idata, unsigned int w, unsigned int h,
 // print command line format
 void usage(char *command) 
 {
-    printf("Usage: %s [-h] [-i inputfile] [-o outputfile] [-f filterfile]\n",command);
+    printf("Usage: %s [-h] [-i inputfile] [-o outputfile] [-f filterfile] [-t nthreads]\n",command);
 }
 
 // main
@@ -206,9 +206,11 @@ int main( int argc, char** argv)
     // default command line options
     char *fileIn="lena.pgm",*fileOut="lenaOut.pgm",*fileFilter="filter.txt";
 
+    int nthreads = 1;
+
     // parse command line arguments
     int opt;
-    while( (opt = getopt(argc,argv,"i:o:f:h")) !=-1)
+    while( (opt = getopt(argc,argv,"i:o:f:h:t:")) !=-1)
     {
         switch(opt)
         {
@@ -241,6 +243,15 @@ int main( int argc, char** argv)
                 usage(argv[0]);
                 exit(0);
                 break;
+            case 't':
+                if(strlen(optarg)==0)
+                {
+                    usage(argv[0]);
+                    exit(1);
+                }
+                nthreads = atoi(optarg);
+                break;
+
 
         }
     }
@@ -269,8 +280,39 @@ int main( int argc, char** argv)
     struct timeval start, end;
     gettimeofday(&start, NULL);
 
+    __uint8_t mode = 0; // 0 - normal, 1 - threads for vertical, 2 - threads for horizontal, 3 - sucessive pixels
+
+
     // filter image
-    filterImage(h_idata, w, h, filter, fw, fh, h_odata); 
+    if (mode == 0) filterImage(h_idata, w, h, filter, fw, fh, h_odata); 
+    else if (mode == 1)
+    {
+        // Multithread filtering (vertical strips)
+        unsigned int w1 = w/nthreads;
+        unsigned int wlast = w-(w1*(nthreads-1));
+
+        for (size_t i = 0; i < nthreads-1; i++){
+            filterImage(&h_idata[w1*i], w1, h, filter, fw, fh, &h_odata[w1*i]); 
+        }
+        filterImage(&h_idata[w1*nthreads], wlast, h, filter, fw, fh, &h_odata[w1*nthreads]); 
+    }
+    else if (mode == 2)
+    {
+        // Multithread filtering (horizontal strips)
+        unsigned int h1 = h/nthreads;
+        unsigned int hlast = h-(h1*(nthreads-1));
+
+        for (size_t i = 0; i < nthreads-1; i++){
+            filterImage(&h_idata[w*h1*i], w, h1, filter, fw, fh, &h_odata[w*h1*i]); 
+        }
+        filterImage(&h_idata[w*h1*nthreads], w, hlast, filter, fw, fh, &h_odata[w*h1*nthreads]); 
+    }
+    else if (mode == 3)
+    {
+        // Multithread filtering (sucesssive pixels)
+    }
+
+    
 
     gettimeofday(&end, NULL);
     printf( "Processing time: %f (ms)\n", (end.tv_sec-start.tv_sec)*1000.0 + ((double)(end.tv_usec - start.tv_usec))/1000.0);
