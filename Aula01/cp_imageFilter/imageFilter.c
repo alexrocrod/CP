@@ -203,7 +203,7 @@ void filterImage(unsigned int *h_idata, unsigned int w, unsigned int h,
 
 void *filterImageTH(void *afargs)
 {
-    filterImageArgs fargs = *((filterImageArgs *)afargs);
+    filterImageArgs *fargs = (filterImageArgs *)afargs;
 
     // unsigned int *h_idata = fargs.h_idata;
     // unsigned int w = fargs.w;
@@ -215,7 +215,7 @@ void *filterImageTH(void *afargs)
 
     // filterImage(h_idata, w, h, filter, fw, fh, h_odata);
 
-    filterImage(fargs.h_idata, fargs.w, fargs.h, fargs.filter, fargs.fw, fargs.fh, fargs.h_odata, fargs.w0, fargs.h0);
+    filterImage(fargs->h_idata, fargs->w, fargs->h, fargs->filter, fargs->fw, fargs->fh, fargs->h_odata, fargs->w0, fargs->h0);
     pthread_exit(NULL);
 }
 
