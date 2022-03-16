@@ -24,6 +24,8 @@ typedef struct
     unsigned int fw;
     unsigned int fh; 
     unsigned int* h_odata;
+    unsigned int w0;
+    unsigned int h0;
 } filterImageArgs;
 
 
@@ -168,16 +170,19 @@ int loadFilter(char* fname, float** parray, unsigned int *pwidth, unsigned int *
 // filter image in h_idata using linear filter, stores result in h_odata
 void filterImage(unsigned int *h_idata, unsigned int w, unsigned int h, 
                 float* filter, unsigned int fw, unsigned int fh, 
-                unsigned int* h_odata)
+                unsigned int* h_odata, unsigned int w0, unsigned int h0)
 {
     int i,j,k,l;
 
     int fh_2 = fh/2;
     int fw_2 = fw/2;
 
-    for(i=0; i<h; i++) //height image
+    h += h0;
+    w += w0;
+
+    for(i=w0; i<h; i++) //height image
     {
-        for(j=0; j<w; j++) //width image
+        for(j=h0; j<w; j++) //width image
         {
             float sum = 0;
             for(k=-fh_2; k<=fh_2; k++) //filter height
@@ -200,15 +205,17 @@ void *filterImageTH(void *afargs)
 {
     filterImageArgs fargs = *((filterImageArgs *)afargs);
 
-    unsigned int *h_idata = fargs.h_idata;
-    unsigned int w = fargs.w;
-    unsigned int h = fargs.h ;
-    float* filter = fargs.filter;
-    unsigned int fw = fargs.fw;
-    unsigned int fh = fargs.fh;
-    unsigned int* h_odata = fargs.h_odata;
+    // unsigned int *h_idata = fargs.h_idata;
+    // unsigned int w = fargs.w;
+    // unsigned int h = fargs.h ;
+    // float* filter = fargs.filter;
+    // unsigned int fw = fargs.fw;
+    // unsigned int fh = fargs.fh;
+    // unsigned int* h_odata = fargs.h_odata;
 
-    filterImage(h_idata, w, h, filter, fw, fh, h_odata);
+    // filterImage(h_idata, w, h, filter, fw, fh, h_odata);
+
+    filterImage(fargs.h_idata, fargs.w, fargs.h, fargs.filter, fargs.fw, fargs.fh, fargs.h_odata, fargs.w0, fargs.h0);
     pthread_exit(NULL);
 }
 
@@ -317,12 +324,12 @@ int main( int argc, char** argv)
     struct timeval start, end;
     gettimeofday(&start, NULL);
 
-    pthread_t ths[1024];
+    pthread_t ths[64];
     int rc;
 
 
     // filter image
-    if (nthreads == 1 ) filterImage(h_idata, w, h, filter, fw, fh, h_odata); 
+    if (nthreads == 1 ) filterImage(h_idata, w, h, filter, fw, fh, h_odata,0,0); 
     else if (mode == 1)
     {
         if (nthreads > w) nthreads = w;
@@ -332,35 +339,36 @@ int main( int argc, char** argv)
 
         for (int i = 0; i < nthreads-1; i++){
 
-            filterImageArgs fargs;
-            fargs.h_idata = &h_idata[w1*i];
-            fargs.w = w1;
-            fargs.h = h;
-            fargs.filter = filter;
-            fargs.fw = fw;
-            fargs.fh = fh;
-            fargs.h_odata = &h_odata[w1*i];
+            filterImageArgs fargs1;
+            fargs1.h_idata = h_idata;
+            fargs1.w = w1;
+            fargs1.h = h;
+            fargs1.filter = filter;
+            fargs1.fw = fw;
+            fargs1.fh = fh;
+            fargs1.h_odata = h_odata;
+            fargs1.w0 = w1*i;
+            fargs1.h0 = 0;
 
-
-            rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
+            rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs1);
             if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
 
-            // filterImage(&h_idata[w1*i], w1, h, filter, fw, fh, &h_odata[w1*i]); 
         }
         int i = nthreads-1;
-        filterImageArgs fargs;
-        fargs.h_idata = &h_idata[w1*i];
-        fargs.w = wlast;
-        fargs.h = h;
-        fargs.filter = filter;
-        fargs.fw = fw;
-        fargs.fh = fh;
-        fargs.h_odata = &h_odata[w1*i];
+        filterImageArgs fargs2;
+        fargs2.h_idata = h_idata;
+        fargs2.w = wlast;
+        fargs2.h = h;
+        fargs2.filter = filter;
+        fargs2.fw = fw;
+        fargs2.fh = fh;
+        fargs2.h_odata = h_odata;
+        fargs2.w0 = w1*i;
+        fargs2.h0 = 0;
 
-        rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
+        rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs2);
         if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
 
-        // filterImage(&h_idata[w1*nthreads], wlast, h, filter, fw, fh, &h_odata[w1*nthreads]); 
     }
     else if (mode == 2)
     {
@@ -373,13 +381,15 @@ int main( int argc, char** argv)
         for (int i = 0; i < nthreads-1; i++){
 
             filterImageArgs fargs;
-            fargs.h_idata = &h_idata[w*h1*i];
+            fargs.h_idata = h_idata;
             fargs.w = w;
             fargs.h = h1;
             fargs.filter = filter;
             fargs.fw = fw;
             fargs.fh = fh;
-            fargs.h_odata = &h_odata[w*h1*i];
+            fargs.h_odata = h_odata;
+            fargs.w0 = 0;
+            fargs.h0 = h1*i;
 
 
             rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
@@ -388,13 +398,15 @@ int main( int argc, char** argv)
         }
         int i = nthreads-1;
         filterImageArgs fargs;
-        fargs.h_idata = &h_idata[w*h1*i];
+        fargs.h_idata = h_idata;
         fargs.w = w;
         fargs.h = hlast;
         fargs.filter = filter;
         fargs.fw = fw;
         fargs.fh = fh;
-        fargs.h_odata = &h_odata[w*h1*i];
+        fargs.h_odata = h_odata;
+        fargs.w0 = 0;
+        fargs.h0 = h1*i;
 
         
         rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
@@ -440,7 +452,6 @@ int main( int argc, char** argv)
     }
 
     
-
     gettimeofday(&end, NULL);
     printf( "Processing time: %f (ms)\n", (end.tv_sec-start.tv_sec)*1000.0 + ((double)(end.tv_usec - start.tv_usec))/1000.0);
 
