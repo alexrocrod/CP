@@ -205,16 +205,6 @@ void *filterImageTH(void *afargs)
 {
     filterImageArgs *fargs = (filterImageArgs *)afargs;
 
-    // unsigned int *h_idata = fargs.h_idata;
-    // unsigned int w = fargs.w;
-    // unsigned int h = fargs.h ;
-    // float* filter = fargs.filter;
-    // unsigned int fw = fargs.fw;
-    // unsigned int fh = fargs.fh;
-    // unsigned int* h_odata = fargs.h_odata;
-
-    // filterImage(h_idata, w, h, filter, fw, fh, h_odata);
-
     filterImage(fargs->h_idata, fargs->w, fargs->h, fargs->filter, fargs->fw, fargs->fh, fargs->h_odata, fargs->w0, fargs->h0);
     pthread_exit(NULL);
 }
@@ -224,7 +214,7 @@ void *filterImageTH(void *afargs)
 // print command line format
 void usage(char *command) 
 {
-    printf("Usage: %s [-h] [-i inputfile] [-o outputfile] [-f filterfile] [-t nthreads] [-m mode]\n",command);
+    printf("Usage: %s [-h] [-i inputfile] [-o outputfile] [-f filterfile] [-t nthreads]\n",command);
 }
 
 // main
@@ -240,12 +230,11 @@ int main( int argc, char** argv)
     // default command line options
     char *fileIn="lena.pgm",*fileOut="lenaOut.pgm",*fileFilter="filter.txt";
 
-    int nthreads = 1;
-    int mode = 1;
+    int nthreads = 2;
 
     // parse command line arguments
     int opt;
-    while( (opt = getopt(argc,argv,"i:o:f:h:t:m:")) !=-1)
+    while( (opt = getopt(argc,argv,"i:o:f:h:t:")) !=-1)
     {
         switch(opt)
         {
@@ -284,18 +273,9 @@ int main( int argc, char** argv)
                     usage(argv[0]);
                     exit(1);
                 }
-                nthreads = atoi(optarg);
+                nthreads = atoi(optarg);              
+                printf("%d threads\n", nthreads);
                 break;
-            case 'm': // MODE: 0 - normal, 1 - threads for vertical, 2 - threads for horizontal, 3 - sucessive pixels
-                if(strlen(optarg)==0)
-                {
-                    usage(argv[0]);
-                    exit(1);
-                }
-                mode = atoi(optarg);
-                break;
-
-
         }
     }
 
@@ -319,20 +299,28 @@ int main( int argc, char** argv)
 
     // allocate mem for the result
     h_odata   = (unsigned int*) malloc( h*w*sizeof(unsigned int));
-    printf("w=%d, h=%d\n", w,h);
+    printf("w=%d, h=%d\n", w, h);
  
-    struct timeval start, end;
-    gettimeofday(&start, NULL);
-
-    pthread_t ths[64];
+    pthread_t ths[w];
     int rc;
 
+    struct timeval start, end;
+    gettimeofday(&start, NULL);
+    
+    filterImage(h_idata, w, h, filter, fw, fh, h_odata,0,0); 
 
-    // filter image
-    if (nthreads == 1 ) filterImage(h_idata, w, h, filter, fw, fh, h_odata,0,0); 
-    else if (mode == 1)
+    gettimeofday(&end, NULL);
+    double linearT =  (end.tv_sec-start.tv_sec)*1000.0 + ((double)(end.tv_usec - start.tv_usec))/1000.0;
+    printf( "Linear Processing time: %f (ms)\n", linearT);
+    ///------------------------------------------------------------------
+
+    int n0ths = nthreads;
+
+    if (nthreads > w) nthreads = w;
+
+    // struct timeval start, end;
+    gettimeofday(&start, NULL);
     {
-        if (nthreads > w) nthreads = w;
         // Multithread filtering (vertical strips)
         unsigned int w1 = w/nthreads;
         unsigned int wlast = w-(w1*(nthreads-1));
@@ -369,11 +357,26 @@ int main( int argc, char** argv)
         rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs2);
         if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
 
-    }
-    else if (mode == 2)
-    {
-        if (nthreads > h) nthreads = h;
 
+        for (int i = 0; i < nthreads; i++)
+        {
+            pthread_join(ths[i],NULL);
+        }
+        
+    }
+    gettimeofday(&end, NULL);
+    double VerticalT = (end.tv_sec-start.tv_sec)*1000.0 + ((double)(end.tv_usec - start.tv_usec))/1000.0;
+    printf( "Vertical parts: Processing time: %f (ms), speedup: %.2f x\n", VerticalT, (linearT/VerticalT));
+
+    ///------------------------------------------------------------------
+
+    nthreads = n0ths;
+
+    if (nthreads > h) nthreads = h;
+
+    // struct timeval start, end;
+    gettimeofday(&start, NULL);
+    {
         // Multithread filtering (horizontal strips)
         unsigned int h1 = h/nthreads;
         unsigned int hlast = h-(h1*(nthreads-1));
@@ -412,49 +415,61 @@ int main( int argc, char** argv)
         rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
         if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
 
-        // filterImage(&h_idata[w*h1*nthreads], w, hlast, filter, fw, fh, &h_odata[w*h1*nthreads]); 
-    }
-    else if (mode == 3)
-    {
-        if (nthreads > w*h) nthreads = w*h;
-
-        // Multithread filtering (sucesssive pixels) . by considering that successive pixels in each line 
-        // will be processed by different successive threads.
-
-        int i = 0;
-        for (int k = 0; k < w; k++){
-            for (int l = 0; l < h; l++){
-                
-                filterImageArgs fargs;
-                fargs.h_idata = &h_idata[k+l*w];
-                fargs.w = 1;
-                fargs.h = 1;
-                fargs.filter = filter;
-                fargs.fw = fw;
-                fargs.fh = fh;
-                fargs.h_odata = &h_odata[k+l*w];
-
-
-                rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
-                if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
-                i++;
-                i %= nthreads;
-                pthread_join(ths[i],NULL);
-            }
-        }
-
-    }
-    if (mode != 3){
         for (int i = 0; i < nthreads; i++)
         {
             pthread_join(ths[i],NULL);
         }
     }
-
-    
     gettimeofday(&end, NULL);
-    printf( "Processing time: %f (ms)\n", (end.tv_sec-start.tv_sec)*1000.0 + ((double)(end.tv_usec - start.tv_usec))/1000.0);
+    double HorizontalT = (end.tv_sec-start.tv_sec)*1000.0 + ((double)(end.tv_usec - start.tv_usec))/1000.0;
+    printf( "Horizontal parts: Processing time: %f (ms), speedup: %.2f x\n", HorizontalT, (linearT/HorizontalT));
 
+    /////---------------------------------------------------------
+    nthreads = n0ths;
+
+    if (nthreads > w) nthreads = w;
+
+    // struct timeval start, end;
+    gettimeofday(&start, NULL);
+    {
+        // Multithread filtering (sucesssive pixels) . by considering that successive pixels in each line 
+        // will be processed by different successive threads.
+
+        int i = 0;
+        for (int k = 0; k < w; k++){
+                
+            filterImageArgs fargs;
+            fargs.h_idata = h_idata;
+            fargs.w = 1;
+            fargs.h = h;
+            fargs.filter = filter;
+            fargs.fw = fw;
+            fargs.fh = fh;
+            fargs.h_odata = h_odata;
+            fargs.w0 = k;
+            fargs.h0 = 0;
+
+
+            rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
+            if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
+            i++;
+            i %= nthreads;
+            pthread_join(ths[i],NULL);
+        }
+        printf("next join, %d\n",i);
+        for (int j = 0; j < nthreads; j++)
+        {
+            if (j != i) pthread_join(ths[j],NULL);
+        }
+        
+
+    }
+    gettimeofday(&end, NULL);
+    double ColumnsT = (end.tv_sec-start.tv_sec)*1000.0 + ((double)(end.tv_usec - start.tv_usec))/1000.0;
+    printf( "Collumns: Processing time: %f (ms), speedup: %.2f x\n", ColumnsT, (linearT/ColumnsT));
+
+    /////---------------------------------------------------------
+    
     // save output image
     if (savePGM(fileOut, h_odata, w, h, maxgray)==-1) {
         printf("Failed to save image file: %s\n", fileOut);
