@@ -9,6 +9,9 @@ all: sumarray
 sumarray: sumarray.o
 	g++ $(CFLAGS) -o $@ $^
 
+sumarrayChar: sumarrayChar.o
+	g++ $(CFLAGS) -o $@ $^
+
 
 clean:
 	rm -f *.o sumarray
