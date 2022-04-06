@@ -71,8 +71,90 @@ int main(int argc, char *argv[]) {
    start = omp_get_wtime();
    {
       while (p != NULL) {
-      processwork(p);
-      p = p->next;
+         #pragma omp task
+         processwork(p);
+         p = p->next;
+      }
+   }
+
+
+   end = omp_get_wtime();
+   p = head;
+   while (p != NULL) {
+      printf("%d : %d\n",p->data, p->fibdata);
+      temp = p->next;
+      free (p);
+      p = temp;
+   }  
+   free (p);
+
+   double Tsingle = end-start;
+   printf("Compute Time: %f seconds\n", Tsingle);
+
+   ////////////////////////////////////////////
+   p=NULL;
+   temp=NULL;
+   head=NULL;  
+
+   p = init_list(p);
+   head = p;
+
+   start = omp_get_wtime();
+
+   struct node* ps[N+1];
+   int cps = 0;
+   {
+      while (p != NULL) {
+         ps[cps] = p;
+         p = p->next;
+         cps++;
+      }
+   }
+
+   #pragma omp parallel firstprivate(ps)
+   {
+      #pragma omp for
+      for(int i=0; i<N+1; i++){
+         processwork(ps[i]);
+      }
+   }
+      
+   
+
+   end = omp_get_wtime();
+   p = head;
+   while (p != NULL) {
+      printf("%d : %d\n",p->data, p->fibdata);
+      temp = p->next;
+      free (p);
+      p = temp;
+   }  
+   free (p);
+
+   double Twotask = end - start;
+   printf("Compute Time w/o task: %f seconds\n", Twotask);
+   printf("Speedup: %.2fx\n", Tsingle/Twotask);
+
+
+   ////////////////////////////////////////////
+   p=NULL;
+   temp=NULL;
+   head=NULL;  
+
+   p = init_list(p);
+   head = p;
+
+   start = omp_get_wtime();
+   #pragma omp parallel
+   {
+      #pragma omp single private(p)
+      {
+         p = head;
+         while (p != NULL) {
+            #pragma omp task
+            processwork(p);
+            p = p->next;
+         }
       }
    }
 
@@ -86,7 +168,9 @@ int main(int argc, char *argv[]) {
    }  
    free (p);
 
-   printf("Compute Time: %f seconds\n", end - start);
+   Twotask = end - start;
+   printf("Compute Time with task: %f seconds\n", Twotask);
+   printf("Speedup: %.2fx\n", Tsingle/Twotask);
 
    return 0;
 }
