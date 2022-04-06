@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
    
    printf("Process linked list\n");
    printf("  Each linked list node will be processed by function 'processwork()'\n");
-   printf("  Each ll node will compute %d fibonacci numbers beginning with %d\n",N,FS);      
+   printf("  Each ll node will compute %d fibonacci numbers beginning with %d\n\n",N,FS);      
 
    p = init_list(p);
    head = p;
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
    end = omp_get_wtime();
    p = head;
    while (p != NULL) {
-      printf("%d : %d\n",p->data, p->fibdata);
+      printf("%d : %d, ",p->data, p->fibdata);
       temp = p->next;
       free (p);
       p = temp;
@@ -89,7 +89,7 @@ int main(int argc, char *argv[]) {
    free (p);
 
    double Tsingle = end-start;
-   printf("Compute Time: %f seconds\n", Tsingle);
+   printf("\nCompute Time: %f seconds\n\n", Tsingle);
 
    ////////////////////////////////////////////
    p=NULL;
@@ -119,12 +119,10 @@ int main(int argc, char *argv[]) {
       }
    }
       
-   
-
    end = omp_get_wtime();
    p = head;
    while (p != NULL) {
-      printf("%d : %d\n",p->data, p->fibdata);
+      printf("%d : %d, ",p->data, p->fibdata);
       temp = p->next;
       free (p);
       p = temp;
@@ -132,8 +130,8 @@ int main(int argc, char *argv[]) {
    free (p);
 
    double Twotask = end - start;
-   printf("Compute Time w/o task: %f seconds\n", Twotask);
-   printf("Speedup: %.2fx\n", Tsingle/Twotask);
+   printf("\nCompute Time w/o task: %f seconds\n", Twotask);
+   printf("Speedup: %.2fx\n\n", Tsingle/Twotask);
 
 
    ////////////////////////////////////////////
@@ -161,7 +159,7 @@ int main(int argc, char *argv[]) {
    end = omp_get_wtime();
    p = head;
    while (p != NULL) {
-      printf("%d : %d\n",p->data, p->fibdata);
+      printf("%d : %d, ",p->data, p->fibdata);
       temp = p->next;
       free (p);
       p = temp;
@@ -169,7 +167,7 @@ int main(int argc, char *argv[]) {
    free (p);
 
    Twotask = end - start;
-   printf("Compute Time with task: %f seconds\n", Twotask);
+   printf("\nCompute Time with task: %f seconds\n", Twotask);
    printf("Speedup: %.2fx\n", Tsingle/Twotask);
 
    return 0;
