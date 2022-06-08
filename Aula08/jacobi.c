@@ -19,11 +19,13 @@ int main(int argc, char *argv[])
     int myid; 
     int nx, ny;
 
+    int manager_rank = 0;
+
     MPI_Init(&argc,&argv);
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     
-    if (myid == 0)
+    if (myid == manager_rank)
     {
         printf("Introduza numero de pontos {max %d, 0 para sair}: ",NXMAX);
         scanf(" %d", &nx);
@@ -56,10 +58,12 @@ int main(int argc, char *argv[])
 
     MPI_Cart_shift(comm1D, 0, 1, &nbrbottom , &nbrtop);
 
-    // printf("myid=%d, newid=%d, bot=%d, top=%d", myid, newid, nbrbottom, nbrtop);   
+    // printf("myid=%d, newid=%d, bot=%d, top=%d\n", myid, newid, nbrbottom, nbrtop);   
 
+    int firstrow;
+    int myrows;
 
-    if (newid == 0)
+    if (newid == manager_rank)
     {   
         int listfirstrow[nprocs];
         int listmyrows[nprocs];
@@ -75,9 +79,21 @@ int main(int argc, char *argv[])
 
         // altera o numero de linhas do ultimo
         listmyrows[nprocs-1] = ny - 2 - (nprocs - 1) * nrows;
-        
+
+        MPI_Scatter(listfirstrow, 1, MPI_INT, &firstrow, 1, MPI_INT, newid, comm1D);
+
+        MPI_Scatter(listmyrows, 1, MPI_INT, &myrows, 1, MPI_INT, newid, comm1D);
+        printf("\n");
 
     }
+    else
+    {
+        MPI_Scatter(MPI_BOTTOM, 1, MPI_INT, &firstrow, 1, MPI_INT, manager_rank, comm1D);
+
+        MPI_Scatter(MPI_BOTTOM, 1, MPI_INT, &myrows, 1, MPI_INT, manager_rank, comm1D);
+    }
+
+    printf("newid=%d, firstrow=%d, lastrow=%d\n", newid, firstrow, firstrow+myrows-1);
 
     MPI_Finalize();
 
