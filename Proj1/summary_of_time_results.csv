@@ -1,0 +1,6 @@
+,Host,OpenMP,CUDA Global Memory,CUDA Constant Memory
+chess,1.865,0.625,0.384,0.368
+chessBig,97.448,15.042,4.74,4.622
+chessL,2.857,0.78,0.471,0.448
+chessRotate1,1.8,0.653,0.384,0.367
+house,3.607,0.945,0.499,0.477
