@@ -325,7 +325,7 @@ int main( int argc, char** argv)
         unsigned int w1 = w/nthreads;
         unsigned int wlast = w-(w1*(nthreads-1));
 
-        for (int i = 0; i < nthreads-1; i++){
+        for (int i = 0; i < nthreads; i++){
 
             filterImageArgs fargs1;
             fargs1.h_idata = h_idata;
@@ -338,26 +338,13 @@ int main( int argc, char** argv)
             fargs1.w0 = w1*i;
             fargs1.h0 = 0;
 
+            if (i==nthreads-1)
+                fargs1.w = wlast;
+                
             rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs1);
             if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
 
         }
-        int i = nthreads-1;
-        filterImageArgs fargs2;
-        fargs2.h_idata = h_idata;
-        fargs2.w = wlast;
-        fargs2.h = h;
-        fargs2.filter = filter;
-        fargs2.fw = fw;
-        fargs2.fh = fh;
-        fargs2.h_odata = h_odata;
-        fargs2.w0 = w1*i;
-        fargs2.h0 = 0;
-
-        rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs2);
-        if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
-
-
         for (int i = 0; i < nthreads; i++)
         {
             pthread_join(ths[i],NULL);
@@ -381,7 +368,7 @@ int main( int argc, char** argv)
         unsigned int h1 = h/nthreads;
         unsigned int hlast = h-(h1*(nthreads-1));
 
-        for (int i = 0; i < nthreads-1; i++){
+        for (int i = 0; i < nthreads; i++){
 
             filterImageArgs fargs;
             fargs.h_idata = h_idata;
@@ -394,26 +381,13 @@ int main( int argc, char** argv)
             fargs.w0 = 0;
             fargs.h0 = h1*i;
 
+            if (i==nthreads-1)
+                fargs.h = hlast;
 
             rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
             if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
 
         }
-        int i = nthreads-1;
-        filterImageArgs fargs;
-        fargs.h_idata = h_idata;
-        fargs.w = w;
-        fargs.h = hlast;
-        fargs.filter = filter;
-        fargs.fw = fw;
-        fargs.fh = fh;
-        fargs.h_odata = h_odata;
-        fargs.w0 = 0;
-        fargs.h0 = h1*i;
-
-        
-        rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
-        if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
 
         for (int i = 0; i < nthreads; i++)
         {
@@ -435,40 +409,48 @@ int main( int argc, char** argv)
         // Multithread filtering (sucesssive pixels) . by considering that successive pixels in each line 
         // will be processed by different successive threads.
 
-        int i = 0;
-        for (int k = 0; k < w; k++){
-                
-            filterImageArgs fargs;
-            fargs.h_idata = h_idata;
-            fargs.w = 1;
-            fargs.h = h;
-            fargs.filter = filter;
-            fargs.fw = fw;
-            fargs.fh = fh;
-            fargs.h_odata = h_odata;
-            fargs.w0 = k;
-            fargs.h0 = 0;
-
-
-            rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
-            if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
-            i++;
-            i %= nthreads;
-            pthread_join(ths[i],NULL);
-        }
-        printf("next join, %d\n",i);
-        for (int j = 0; j < nthreads; j++)
+        for (int j = 0; j < h; j++) // lines
         {
-            if (j != i) pthread_join(ths[j],NULL);
+            for (int nth = 0; nth < w; nth += nthreads)
+            {
+                int maxK = min(nth + nthreads,w);
+                for (int k = nth; k < maxK ; k++)
+                {  
+                    int i = k - nth;
+
+                    filterImageArgs fargs;
+                    fargs.h_idata = h_idata;
+                    fargs.w = 1;
+                    fargs.h = 1;
+                    fargs.filter = filter;
+                    fargs.fw = fw;
+                    fargs.fh = fh;
+                    fargs.h_odata = h_odata;
+                    fargs.w0 = k;
+                    fargs.h0 = j;
+
+                    // printf("j=%d, k=%d, th=%d\n",j,k,i);
+
+
+                    rc = pthread_create(&ths[i], NULL, filterImageTH, &fargs);
+                    if(rc){printf("Error: unable to create thread, %d\n",i); exit(1);}
+
+                    // pthread_join(ths[i],NULL);
+                }
+                for (int a = 0; a < maxK-nth; a++)
+                {
+                    pthread_join(ths[a],NULL);
+                }
+            }
         }
-        
+            
 
     }
     gettimeofday(&end, NULL);
     double ColumnsT = (end.tv_sec-start.tv_sec)*1000.0 + ((double)(end.tv_usec - start.tv_usec))/1000.0;
     printf( "Collumns: Processing time: %f (ms), speedup: %.2f x\n", ColumnsT, (linearT/ColumnsT));
 
-    /////---------------------------------------------------------
+    //---------------------------------------------------------
     
     // save output image
     if (savePGM(fileOut, h_odata, w, h, maxgray)==-1) {

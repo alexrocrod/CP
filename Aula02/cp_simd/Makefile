@@ -4,7 +4,7 @@ CXXFLAGS = -Wall
 
 .PHONY: all clean
 
-all: sumarray
+all: sumarray sumarrayChar sumelems
 
 sumarray: sumarray.o
 	g++ $(CFLAGS) -o $@ $^
@@ -12,7 +12,9 @@ sumarray: sumarray.o
 sumarrayChar: sumarrayChar.o
 	g++ $(CFLAGS) -o $@ $^
 
+sumelems: sumelems.o
+	g++ $(CXXFLAGS) -o $@ $^
 
 clean:
-	rm -f *.o sumarray
+	rm -f *.o sumarray sumarrayChar sumelems
 

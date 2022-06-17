@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
    start = omp_get_wtime();
    {
       while (p != NULL) {
-         #pragma omp task
+         // #pragma omp task
          processwork(p);
          p = p->next;
       }

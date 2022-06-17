@@ -82,7 +82,7 @@ void print_array(int *a, int size)
  * */
 void initArrays( int *a, int *b, int *c, int size )
 {
-    for (int i=0; i< SIZE; i++) {
+    for (int i=0; i< size; i++) {
         a[i]=(i<<16)+1;
         b[i]=0xffff;
         c[i]=0;

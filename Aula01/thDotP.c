@@ -24,8 +24,8 @@ void *dot1(void *apars){
 
 int main( int argc, char** argv) 
 {
-    float ola1[] = {2.5, 10, 2};
-    float ola2[] = {10, 1, 4};
+    float ola1[3] = {2.5, 10, 2};
+    float ola2[3] = {10, 1, 4};
 
     float res = 0.0f;
     pthread_t ths[2];
