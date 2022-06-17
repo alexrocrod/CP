@@ -1,6 +1,8 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <cstdlib>
+
 
 #define SIZE   (1000)
 #define REPEAT (100000)
@@ -97,17 +99,20 @@ void initArrays( char *a, char *b, char *c, int size )
 /**
  * test summation functions
  */
-int main(void)
+int main(int argc, char* argv[])
 {
-    char a[SIZE];
-    char b[SIZE],c[SIZE];
+    int size = atoi(argv[1]);
+    printf("size: %d\n",size);
+
+    char a[size];
+    char b[size],c[size];
 
     int n, nelemsum;
 
     clock_t init, end;
 
     //initialize arrays
-    nelemsum=SIZE;
+    nelemsum=size;
     initArrays(a,b,c,nelemsum);
 
     // test classic code

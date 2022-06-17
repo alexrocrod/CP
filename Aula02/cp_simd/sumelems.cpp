@@ -9,56 +9,60 @@
 /**
  * sumarray using mmx instructions 
  * */
-void sumarray_mmx( int *a, int *b, int *c, int size )
-{
+// int sumarray_mmx( int *a, int size )
+// {
+//   int res;
+//   for (int i=0;i<size;i+=2) {
+//     __asm__ volatile
+//         ( // instruction         comment          
+//         "\n\t movq     %1,%%mm0     \t#"
+//         "\n\t movq     %2,%%mm1     \t#"
+//         // "\n\t paddd    %%mm0,%%mm1    \t#"
+//         "\n\t paddusb    %%mm0,%%mm1    \t#"
+//         "\n\t movq     %%mm1,%0     \t#"
+//         : "=m" (res)      // %0
+//         );  
+//   }
 
-  for (int i=0;i<size;i+=2) {
-    __asm__ volatile
-        ( // instruction         comment          
-        "\n\t movq     %1,%%mm0     \t#"
-        "\n\t movq     %2,%%mm1     \t#"
-        // "\n\t paddd    %%mm0,%%mm1    \t#"
-        "\n\t paddusb    %%mm0,%%mm1    \t#"
-        "\n\t movq     %%mm1,%0     \t#"
-        : "=m" (c[i])      // %0
-        : "m"  (a[i]),     // %1 
-          "m"  (b[i])      // %2
-        );  
-  }
+//   __asm__("emms" : : );
 
-   __asm__("emms" : : );
-}
+//   return res;
+// }
 
 /**
  * sumarray using using the movdqa and paddd instructions and SSE registers
  * */
-void sumarray_sse( int *a, int *b, int *c, int size )
+int sumarray_sse( int *a, int size )
 {
-
+  int res = 0, temp = 0;
   for (int i=0;i<size;i+=4) {
     __asm__ volatile
         ( // instruction         comment          
         "\n\t movdqa     %1,%%xmm0     \t#"
-        "\n\t movdqa     %2,%%xmm1     \t#"
-        "\n\t paddd    %%xmm0,%%xmm1    \t#"
+        "\n\t haddps    %%xmm0,%%xmm1    \t#"
         "\n\t movdqa     %%xmm1,%0     \t#"
-        : "=m" (c[i])      // %0
-        : "m"  (a[i]),     // %1 
-          "m"  (b[i])      // %2
+        : "=m" (temp)    // 0
+        : "m" (a[i])    // 1
         ); 
+    
+    res += temp;
   }
 
-   __asm__("emms" : : );
+  __asm__("emms" : : );
+
+  return res;
 }
 
 /**
  * sumarray using classic code 
  * */
-void sumarray( int *a, int *b, int *c, int size )
+int sumarray( int *a, int size )
 {
+  int res = 0;
   for (int i=0;i<size;i++) {
-      c[i]=a[i]+b[i];
+      res += a[i];
   }
+  return res; 
 }
 
 /**
@@ -80,12 +84,13 @@ void print_array(int *a, int size)
 /**
  * init arrays
  * */
-void initArrays( int *a, int *b, int *c, int size )
+void initArrays( int *a, int size, int supSize )
 {
-    for (int i=0; i< SIZE; i++) {
-        a[i]=(i<<16)+1;
-        b[i]=0xffff;
-        c[i]=0;
+    for (int i=0; i< size; i++) {
+        a[i]= i; //(i<<16)+1;
+    }
+    for (int i=size; i< supSize; i++) {
+        a[i]= 0; //(i<<16)+1;
     }
 }
 
@@ -99,53 +104,59 @@ int main(int argc, char* argv[])
     printf("size: %d\n",size);
     // int size = SIZE;
     int a[size];
-    int b[size],c[size];
     
-    int n, nelemsum;
+    int n, nelemsum, res;
 
     clock_t init, end;
 
     //initialize arrays
     nelemsum=size;
-    initArrays(a,b,c,nelemsum);
+    int supSize = nelemsum + (4-nelemsum%4);
+
+    printf("s = %d, SS = %d\n",nelemsum,supSize);
+
+    initArrays(a,nelemsum, supSize);
 
     // test classic code
     init = clock();
     for(n=0;n<REPEAT;n++)
-        sumarray(a,b,c,nelemsum);
+        res = sumarray(a,nelemsum);
     end = clock();
 
-    print_array(c,12);
+    printf("res = %d\n",res);
 
     float sum_time =  (end-init)/(CLOCKS_PER_SEC*1.0);
 
-    printf("sumarray time = %f\n",sum_time);
+    printf("sumarray time = %f\n\n",sum_time);
+
+    // //initialize arrays
+    // initArrays(a,nelemsum);
+
+    // // test mmx code
+    // init = clock();
+    // for(n=0;n<REPEAT;n++)
+    //     res = sumarray_mmx(a,nelemsum);
+    // end = clock();
+
+    // printf("res = %d\n",res);
+
+    // float sumMMX_time =  (end-init)/(CLOCKS_PER_SEC*1.0);
+
+    // printf("sumarray time = %f\n", sumMMX_time);
+    // printf("speedup = %.2fx\n\n", sum_time/sumMMX_time);
 
     //initialize arrays
-    initArrays(a,b,c,nelemsum);
+    initArrays(a, nelemsum, supSize);
 
-    // test mmx code
-    init = clock();
-    for(n=0;n<REPEAT;n++)
-        sumarray_mmx(a,b,c,nelemsum);
-    end = clock();
-
-    print_array(c,12);
-
-    float sumMMX_time =  (end-init)/(CLOCKS_PER_SEC*1.0);
-
-    printf("sumarray time = %f\n", sumMMX_time);
-    printf("speedup = %.2fx\n", sum_time/sumMMX_time);
-
-    printf("\n");
+    res = 0;
 
     // test sse code
     init = clock();
     for(n=0;n<REPEAT;n++)
-        sumarray_sse(a,b,c,nelemsum);
+        res = sumarray_sse(a,supSize);
     end = clock();
 
-    print_array(c,12);
+    printf("res = %d\n",res);
 
     float sumSSE_time =  (end-init)/(CLOCKS_PER_SEC*1.0);
 
