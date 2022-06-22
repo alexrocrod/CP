@@ -213,56 +213,57 @@ int main(int argc, char *argv[])
             {
                 printf("calculo durou %f segundos\n", MPI_Wtime() - tm1);
                 printf("%d iteracoes\n", iter);
-
-                // double (*V)[nx];
-                // V = calloc(ny, sizeof(*V));
-
-                // for (int i = 0; i < myrows +1; i++)
-                // {
-                //     for (int j = 0; j < nx; j++)
-                //     {
-                //         V[i][j] = Vnew[i][j];
-                //     }
-                    
-                // }
-
-                // for (int i = myrows + 1; i < ny; i++)
-                // {
-                //    MPI_Recv(V[i], nx, MPI_DOUBLE, MPI_ANY_SOURCE, i, comm1D, MPI_STATUS_IGNORE);
-                    
-                // }
-
-                // tm1 = MPI_Wtime();
-
-                // FILE *pfile;
-                // pfile = fopen("results_2022.dat","w");
-
-                // for (int i = 0; i < ny; i++)
-                // {
-                //     for (int j = 0; i < nx; j++)
-                //     {
-                //         fprintf(pfile, "%.5f ", V[i][j]);
-                //     }
-                //     fprintf(pfile,"\n");
-                // }
-                
-
-                // printf("escrita durou %f segundos\n", MPI_Wtime() - tm1);
-
-                // free(V);
+                tm1 = MPI_Wtime();
             }
-            else
-            {
-            //     for (int i = 1; i < myrows + 1; i++)
-            //     {
-            //        MPI_Send(Vnew[i], nx, MPI_DOUBLE, 0, firstrow + i - 1, comm1D); 
-            //     } 
-            //     if (newid == nprocs -1)
-            //     {
-            //         MPI_Send(Vnew[myrows+1], nx, MPI_DOUBLE, 0, ny-1, comm1D);
-            //     }
+// ----------------------- // ----------------------- // ----------------------- 
+
+            // Criar novo datatype para definir a file view de cada processo (cada processo vê apenas a parte pela qual é responsável na matriz global)
+            int globalsize[2] = {nx, ny};
+            int localsize[2] = {myrows, mycols+1};
+            int start_inds[2] = {firstrow, firstcol - 1 + (newid % 2)};
+
+            if (newid == 0 || newid == 1) {
+                localsize[0]++;
+                start_inds[0]--;
             }
 
+            if (newid == nprocs-2 || newid == nprocs-1) {
+                localsize[0]++;
+            }
+            
+            MPI_Datatype submatrix;
+            MPI_Type_create_subarray(2, globalsize, localsize, start_inds, MPI_ORDER_C, MPI_DOUBLE, &submatrix);
+            MPI_Type_commit(&submatrix);
+            
+            MPI_File pf;
+            MPI_File_open(comm2D, "results_a.bin", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &pf);
+            MPI_File_set_view(pf, 0, MPI_DOUBLE, submatrix, "native", MPI_INFO_NULL);
+            
+            
+            // Criar novo datatype para enviar apenas pontos locais pelos quais é responsável (não queremos enviar pontos fantasma)
+            int matrixsize[] = {myrows+2,mycols+2};
+            start_inds[0] = 1;
+            start_inds[1] = newid % 2;
+            if (newid == 0 || newid == 1) {
+                start_inds[0]--;
+            }
+            
+            MPI_Datatype localmatrix;
+            MPI_Type_create_subarray(2, matrixsize, localsize, start_inds, MPI_ORDER_C, MPI_DOUBLE, &localmatrix);
+            MPI_Type_commit(&localmatrix);
+            
+            // Escrever ficheiro binário
+            MPI_File_write_all(pf, Vnew, 1, localmatrix, MPI_STATUS_IGNORE);
+            MPI_File_close(&pf);
+            
+            
+            MPI_Type_free(&submatrix);
+            MPI_Type_free(&localmatrix);
+            
+            if (newid == manager_rank) {
+                printf("%f seg para escrever ficheiro.\n", MPI_Wtime()-tm1);
+            }
+// ----------------------- // ----------------------- // -----------------------
             break;
         }
 
