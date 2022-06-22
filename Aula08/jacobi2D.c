@@ -265,16 +265,16 @@ int main(int argc, char *argv[])
         }
 
         // comunicações sentido ascendente
-        MPI_Sendrecv(Vnew[myrows], nx, MPI_DOUBLE, nbrtop, 0, Vnew[0] , nx, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[0] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
 
         // comunicações sentido descendente
-        MPI_Sendrecv(Vnew[1], nx, MPI_DOUBLE, nbrbottom, 1, Vnew[myrows+1] , nx, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
 
         // comunicações sentido para direita
-        MPI_Sendrecv(&(Vnew[0][mycols]), 1, column, nbrright, 2, &(Vnew[0][0]), nx, MPI_DOUBLE, nbrleft, 2, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&(Vnew[0][mycols]), 1, column, nbrright, 2, &(Vnew[0][0]), 1, column, nbrleft, 2, comm2D, MPI_STATUS_IGNORE);
 
         // comunicações sentido para esquerda
-        MPI_Sendrecv(&(Vnew[0][1]), 1, column, nbrleft, 3, &(Vnew[0][mycols+1]), nx, MPI_DOUBLE, nbrright, 3, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&(Vnew[0][1]), 1, column, nbrleft, 3, &(Vnew[0][mycols+1]), 1, column, nbrright, 3, comm2D, MPI_STATUS_IGNORE);
         
         for (int i = 0; i < myrows + 2; i++)
         {
