@@ -184,7 +184,8 @@ int main(int argc, char *argv[])
     }
 
     MPI_Datatype column;
-    MPI_Type_vector();
+    MPI_Type_vector(myrows + 2, 1, mycols + 2 , MPI_DOUBLE, &column);
+    MPI_Type_commit(&column);
     
     double tm1 = MPI_Wtime();
 
@@ -193,7 +194,7 @@ int main(int argc, char *argv[])
         double sums[2] = {0.0,0.0};
         double global_sums[2];
 
-        for (int j = 1; j < nx -1 ; j++)
+        for (int j = 1; j < mycols -1 ; j++)
         {
             for (int i = 1; i < myrows + 1; i++)
             {
@@ -204,12 +205,12 @@ int main(int argc, char *argv[])
             
         }
 
-        MPI_Allreduce(sums, global_sums, 2, MPI_DOUBLE, MPI_SUM, comm1D);
+        MPI_Allreduce(sums, global_sums, 2, MPI_DOUBLE, MPI_SUM, comm2D);
         
         if (sqrt(global_sums[0]/global_sums[1]) < TOL)
         {
-            if (newid == manager_rank)
-            {
+            // if (newid == manager_rank)
+            // {
                 // printf("calculo durou %f segundos\n", MPI_Wtime() - tm1);
                 // double (*V)[nx];
                 // V = calloc(ny, sizeof(*V));
@@ -247,31 +248,37 @@ int main(int argc, char *argv[])
                 // printf("escrita durou %f segundos\n", MPI_Wtime() - tm1);
 
                 // free(V);
-            }
-            else
-            {
-                for (int i = 1; i < myrows + 1; i++)
-                {
-                   MPI_Send(Vnew[i], nx, MPI_DOUBLE, 0, firstrow + i - 1, comm1D); 
-                } 
-                if (newid == nprocs -1)
-                {
-                    MPI_Send(Vnew[myrows+1], nx, MPI_DOUBLE, 0, ny-1, comm1D);
-                }
-            }
+            // }
+            // else
+            // {
+            //     for (int i = 1; i < myrows + 1; i++)
+            //     {
+            //        MPI_Send(Vnew[i], nx, MPI_DOUBLE, 0, firstrow + i - 1, comm1D); 
+            //     } 
+            //     if (newid == nprocs -1)
+            //     {
+            //         MPI_Send(Vnew[myrows+1], nx, MPI_DOUBLE, 0, ny-1, comm1D);
+            //     }
+            // }
 
             break;
         }
 
         // comunicações sentido ascendente
-        MPI_Sendrecv(Vnew[myrows], nx, MPI_DOUBLE, nbrtop, 0, Vnew[0] , nx, MPI_DOUBLE, nbrbottom, 0, comm1D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(Vnew[myrows], nx, MPI_DOUBLE, nbrtop, 0, Vnew[0] , nx, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
 
         // comunicações sentido descendente
-        MPI_Sendrecv(Vnew[1], nx, MPI_DOUBLE, nbrbottom, 1, Vnew[myrows+1] , nx, MPI_DOUBLE, nbrtop, 1, comm1D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(Vnew[1], nx, MPI_DOUBLE, nbrbottom, 1, Vnew[myrows+1] , nx, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
+
+        // comunicações sentido para direita
+        MPI_Sendrecv(&(Vnew[0][mycols]), 1, column, nbrright, 2, &(Vnew[0][0]), nx, MPI_DOUBLE, nbrleft, 2, comm2D, MPI_STATUS_IGNORE);
+
+        // comunicações sentido para esquerda
+        MPI_Sendrecv(&(Vnew[0][1]), 1, column, nbrleft, 3, &(Vnew[0][mycols+1]), nx, MPI_DOUBLE, nbrright, 3, comm2D, MPI_STATUS_IGNORE);
         
-        for (int i = 0; i < myrows +2; i++)
+        for (int i = 0; i < myrows + 2; i++)
         {
-            for (int j = 0; j < nx; j++)
+            for (int j = 0; j < mycols + 2; j++)
             {
                 Vold[i][j] = Vnew[i][j];
             }
@@ -280,12 +287,11 @@ int main(int argc, char *argv[])
         
     }
 
+    MPI_Type_free(&column);
+
     free(Vold);
     free(Vnew);
     free(myf);
-
-    
-
 
     MPI_Finalize();
 
