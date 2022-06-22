@@ -209,9 +209,11 @@ int main(int argc, char *argv[])
         
         if (sqrt(global_sums[0]/global_sums[1]) < TOL)
         {
-            // if (newid == manager_rank)
-            // {
-                // printf("calculo durou %f segundos\n", MPI_Wtime() - tm1);
+            if (newid == manager_rank)
+            {
+                printf("calculo durou %f segundos\n", MPI_Wtime() - tm1);
+                printf("%d iteracoes\n", iter);
+
                 // double (*V)[nx];
                 // V = calloc(ny, sizeof(*V));
 
@@ -248,9 +250,9 @@ int main(int argc, char *argv[])
                 // printf("escrita durou %f segundos\n", MPI_Wtime() - tm1);
 
                 // free(V);
-            // }
-            // else
-            // {
+            }
+            else
+            {
             //     for (int i = 1; i < myrows + 1; i++)
             //     {
             //        MPI_Send(Vnew[i], nx, MPI_DOUBLE, 0, firstrow + i - 1, comm1D); 
@@ -259,7 +261,7 @@ int main(int argc, char *argv[])
             //     {
             //         MPI_Send(Vnew[myrows+1], nx, MPI_DOUBLE, 0, ny-1, comm1D);
             //     }
-            // }
+            }
 
             break;
         }
