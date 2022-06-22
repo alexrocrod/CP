@@ -50,95 +50,142 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    int nprocs_col = (int) nprocs/2;
+
     int ndims = 2;
-    int dims[2] = {nprocs};
-    int periodic[2] = {0};
-    MPI_Comm comm1D;
+    int dims[2] = {nprocs_col, 2};
+    int periodic[2] = {0,0};
+    MPI_Comm comm2D;
     int newid;
-    int nbrbottom, nbrtop;
+    int nbrbottom, nbrtop, nbrleft, nbrright;
 
-    MPI_Cart_create(MPI_COMM_WORLD, ndims, dims, periodic, 1, &comm1D);
+    MPI_Cart_create(MPI_COMM_WORLD, ndims, dims, periodic, 1, &comm2D);
 
-    MPI_Comm_rank(comm1D, &newid);
+    if (comm2D == MPI_COMM_NULL) // processo extra é terminado (se nprocs é impar)
+    {
+        MPI_Finalize();
+        return 0;
+    }
 
-    MPI_Cart_shift(comm1D, 0, 1, &nbrbottom , &nbrtop);
+    nprocs = nprocs_col * dims[1];
 
-    printf("myid=%d, newid=%d, bot=%d, top=%d\n", myid, newid, nbrbottom, nbrtop);   
+    MPI_Comm_rank(comm2D, &newid);
 
-    int firstrow;
-    int myrows;
+    MPI_Cart_shift(comm2D, 0, 1, &nbrbottom , &nbrtop);
+    MPI_Cart_shift(comm2D, 1, 1, &nbrleft , &nbrright);
+
+    printf("myid=%d, newid=%d, bot=%d, top=%d, left=%d, right=%d\n", myid, newid, nbrbottom, nbrtop, nbrleft, nbrright);   
+
+    int firstrow, firstcol;
+    int myrows, mycols;
 
     if (newid == manager_rank)
     {   
         int listfirstrow[nprocs];
         int listmyrows[nprocs];
 
+        int listfirstcol[nprocs];
+        int listmycols[nprocs];
 
-        int nrows = (int)((double)(ny-2)/(double)nprocs + 0.5f);
+        int nrows = (int)((double)(ny-2)/(double)nprocs_col + 0.5);
         
-        for (int i = 0; i < nprocs; i++)
+        // Linhas
+        for (int i = 0; i < nprocs_col; i++)
         {
-            listfirstrow[i] = 1 + i *  nrows;
-            listmyrows[i] = nrows;
+            listfirstrow[2*i] = 1 + i *  nrows;
+            listmyrows[2*i] = nrows;
+            listfirstrow[2*i+1] = 1 + i *  nrows;
+            listmyrows[2*i+1] = nrows;
+        }
+        // altera o numero de linhas do penultimo e do ultimo
+        listmyrows[nprocs-2] = ny - 2 - (nprocs_col - 1) * nrows;
+        listmyrows[nprocs-1] = ny - 2 - (nprocs_col - 1) * nrows;
+
+        // Colunas
+        int ncols_temp = (int)((nx-2)/2);
+        for (int i = 0; i < nprocs_col; i++)
+        {
+            listfirstcol[2*i] = 1;
+            listmycols[2*i] = ncols_temp;
+            listfirstcol[2*i+1] = ncols_temp + 1;
+            listmycols[2*i+1] = nx - 2 - ncols_temp;
         }
 
-        // altera o numero de linhas do ultimo
-        listmyrows[nprocs-1] = ny - 2 - (nprocs - 1) * nrows;
+        MPI_Scatter(listfirstrow, 1, MPI_INT, &firstrow, 1, MPI_INT, newid, comm2D);
+        MPI_Scatter(listmyrows, 1, MPI_INT, &myrows, 1, MPI_INT, newid, comm2D);
 
-        MPI_Scatter(listfirstrow, 1, MPI_INT, &firstrow, 1, MPI_INT, newid, comm1D);
+        MPI_Scatter(listfirstcol, 1, MPI_INT, &firstcol, 1, MPI_INT, newid, comm2D);
+        MPI_Scatter(listmycols, 1, MPI_INT, &mycols, 1, MPI_INT, newid, comm2D);
 
-        MPI_Scatter(listmyrows, 1, MPI_INT, &myrows, 1, MPI_INT, newid, comm1D);
         printf("\n");
-
     }
     else
     {
-        MPI_Scatter(MPI_BOTTOM, 1, MPI_INT, &firstrow, 1, MPI_INT, manager_rank, comm1D);
+        MPI_Scatter(MPI_BOTTOM, 1, MPI_INT, &firstrow, 1, MPI_INT, manager_rank, comm2D);
+        MPI_Scatter(MPI_BOTTOM, 1, MPI_INT, &myrows, 1, MPI_INT, manager_rank, comm2D);
 
-        MPI_Scatter(MPI_BOTTOM, 1, MPI_INT, &myrows, 1, MPI_INT, manager_rank, comm1D);
+        MPI_Scatter(MPI_BOTTOM, 1, MPI_INT, &firstcol, 1, MPI_INT, manager_rank, comm2D);
+        MPI_Scatter(MPI_BOTTOM, 1, MPI_INT, &mycols, 1, MPI_INT, manager_rank, comm2D);
     }
 
-    MPI_Barrier(comm1D);
-    printf("newid=%d, firstrow=%d, lastrow=%d\n", newid, firstrow, firstrow+myrows-1);
+    MPI_Barrier(comm2D);
+    printf("newid=%d, firstrow=%d, lastrow=%d, firstcol=%d, lastcol=%d\n", newid, firstrow, firstrow+myrows-1, firstcol, firstcol+mycols-1);
 
 
-    double (*Vold)[nx], (*Vnew)[nx], (*myf)[nx];
+    double (*Vold)[mycols+2], (*Vnew)[mycols+2], (*myf)[mycols+2];
     Vold = calloc(myrows + 2, sizeof(*Vold));
     Vnew = calloc(myrows + 2, sizeof(*Vnew));
     myf = calloc(myrows + 2, sizeof(*myf));
 
     double h = ((double)2 * L) / ((double) nx - 1);
-    for (int j = 1; j < nx -1 ; j++)
+
+    for (int j = 1; j < mycols + 1 ; j++)
     {
         for (int i = 1; i < myrows + 1; i++)
         {
-            myf[i][j] = f(-L + j * h, -L + (firstrow + i - 1) * h);
+            myf[i][j] = f(-L + (firstcol + j - 1) * h, -L + (firstrow + i - 1) * h);
         }
         
     }
 
     // initialize to zeros (but calloc already does it)
-    if (newid == manager_rank){
-        for (int j = 0; j < nx; j++)
+    if (newid == manager_rank || newid == 1){
+        for (int j = 0; j < mycols+2; j++)
         {
             Vnew[0][j] = 0.;
+            Vold[0][j] = 0.;
         }
     }
 
     // initialize to zeros (but calloc already does it)
-    if (newid == nprocs - 1){
-        for (int j = 0; j < nx; j++)
+    if (newid == nprocs - 1 || newid == nprocs - 1){
+        for (int j = 0; j < mycols + 2; j++)
         {
             Vnew[myrows+1][j] = 0.;
+            Vold[myrows+1][j] = 0.;
         }
     }
 
-    for (int i = 1; i <= myrows; i++)
+    if (newid % 2 == 0)
     {
-        Vnew[i][0] = 0.;
-        Vnew[i][nx-1] = 0.;
+        for (int i = 1; i < myrows + 1; i++)
+        {
+            Vnew[i][0] = 0.;
+            Vold[i][0] = 0.;
+        }
+    }
+    else
+    {
+       for (int i = 1; i < myrows + 1; i++)
+        {
+            Vnew[i][mycols+1] = 0.;
+            Vold[i][mycols+1] = 0.;
+        } 
     }
 
+    MPI_Datatype column;
+    MPI_Type_vector();
+    
     double tm1 = MPI_Wtime();
 
     for (int iter = 0; iter < MAXIT; iter++)
@@ -163,43 +210,43 @@ int main(int argc, char *argv[])
         {
             if (newid == manager_rank)
             {
-                printf("calculo durou %f segundos\n", MPI_Wtime() - tm1);
-                double (*V)[nx];
-                V = calloc(ny, sizeof(*V));
+                // printf("calculo durou %f segundos\n", MPI_Wtime() - tm1);
+                // double (*V)[nx];
+                // V = calloc(ny, sizeof(*V));
 
-                for (int i = 0; i < myrows +1; i++)
-                {
-                    for (int j = 0; j < nx; j++)
-                    {
-                        V[i][j] = Vnew[i][j];
-                    }
+                // for (int i = 0; i < myrows +1; i++)
+                // {
+                //     for (int j = 0; j < nx; j++)
+                //     {
+                //         V[i][j] = Vnew[i][j];
+                //     }
                     
-                }
+                // }
 
-                for (int i = myrows + 1; i < ny; i++)
-                {
-                   MPI_Recv(V[i], nx, MPI_DOUBLE, MPI_ANY_SOURCE, i, comm1D, MPI_STATUS_IGNORE);
+                // for (int i = myrows + 1; i < ny; i++)
+                // {
+                //    MPI_Recv(V[i], nx, MPI_DOUBLE, MPI_ANY_SOURCE, i, comm1D, MPI_STATUS_IGNORE);
                     
-                }
+                // }
 
-                tm1 = MPI_Wtime();
+                // tm1 = MPI_Wtime();
 
-                FILE *pfile;
-                pfile = fopen("results_2022.dat","w");
+                // FILE *pfile;
+                // pfile = fopen("results_2022.dat","w");
 
-                for (int i = 0; i < ny; i++)
-                {
-                    for (int j = 0; i < nx; j++)
-                    {
-                        fprintf(pfile, "%.5f ", V[i][j]);
-                    }
-                    fprintf(pfile,"\n");
-                }
+                // for (int i = 0; i < ny; i++)
+                // {
+                //     for (int j = 0; i < nx; j++)
+                //     {
+                //         fprintf(pfile, "%.5f ", V[i][j]);
+                //     }
+                //     fprintf(pfile,"\n");
+                // }
                 
 
-                printf("escrita durou %f segundos\n", MPI_Wtime() - tm1);
+                // printf("escrita durou %f segundos\n", MPI_Wtime() - tm1);
 
-                free(V);
+                // free(V);
             }
             else
             {
