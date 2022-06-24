@@ -117,7 +117,6 @@ int main(int argc, char *argv[])
         MPI_Scatter(listfirstcol, 1, MPI_INT, &firstcol, 1, MPI_INT, newid, comm2D);
         MPI_Scatter(listmycols, 1, MPI_INT, &mycols, 1, MPI_INT, newid, comm2D);
 
-        printf("\n");
     }
     else
     {
@@ -128,7 +127,7 @@ int main(int argc, char *argv[])
         MPI_Scatter(MPI_BOTTOM, 1, MPI_INT, &mycols, 1, MPI_INT, manager_rank, comm2D);
     }
 
-    MPI_Barrier(comm2D);
+    // MPI_Barrier(comm2D);
     printf("newid=%d, firstrow=%d, lastrow=%d, firstcol=%d, lastcol=%d\n", newid, firstrow, firstrow+myrows-1, firstcol, firstcol+mycols-1);
 
 
@@ -211,59 +210,55 @@ int main(int argc, char *argv[])
         {
             if (newid == manager_rank)
             {
-                printf("calculo durou %f segundos\n", MPI_Wtime() - tm1);
-                printf("%d iteracoes\n", iter);
+                printf("Calculo demorou %f seg; %d iteracoes\n", MPI_Wtime()-tm1, iter);
                 tm1 = MPI_Wtime();
             }
-// ----------------------- // ----------------------- // ----------------------- 
 
-            // Criar novo datatype para definir a file view de cada processo (cada processo vê apenas a parte pela qual é responsável na matriz global)
-            int globalsize[2] = {nx, ny};
-            int localsize[2] = {myrows, mycols+1};
-            int start_inds[2] = {firstrow, firstcol - 1 + (newid % 2)};
+            int gsizes[2] = {ny, nx};
+            int lsizes[2] = {myrows, mycols + 1};
+            int start_ind[2] = {firstrow, firstcol - 1 + (newid % 2)};
 
             if (newid == 0 || newid == 1) {
-                localsize[0]++;
-                start_inds[0]--;
+                lsizes[0]++;
+                start_ind[0]--;
             }
 
             if (newid == nprocs-2 || newid == nprocs-1) {
-                localsize[0]++;
+                lsizes[0]++;
             }
-            
-            MPI_Datatype submatrix;
-            MPI_Type_create_subarray(2, globalsize, localsize, start_inds, MPI_ORDER_C, MPI_DOUBLE, &submatrix);
-            MPI_Type_commit(&submatrix);
-            
-            MPI_File pf;
-            MPI_File_open(comm2D, "results_a.bin", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &pf);
-            MPI_File_set_view(pf, 0, MPI_DOUBLE, submatrix, "native", MPI_INFO_NULL);
-            
-            
+
+            MPI_Datatype filetype;
+            MPI_Type_create_subarray(2, gsizes, lsizes, start_ind, MPI_ORDER_C, MPI_DOUBLE, &filetype);
+            MPI_Type_commit(&filetype);
+          
             // Criar novo datatype para enviar apenas pontos locais pelos quais é responsável (não queremos enviar pontos fantasma)
-            int matrixsize[] = {myrows+2,mycols+2};
-            start_inds[0] = 1;
-            start_inds[1] = newid % 2;
+            int memsizes[2] = {myrows+2, mycols+2};
+            start_ind[0] = 1;
+            start_ind[1] = newid % 2;
             if (newid == 0 || newid == 1) {
-                start_inds[0]--;
+                start_ind[0]--;
             }
-            
-            MPI_Datatype localmatrix;
-            MPI_Type_create_subarray(2, matrixsize, localsize, start_inds, MPI_ORDER_C, MPI_DOUBLE, &localmatrix);
-            MPI_Type_commit(&localmatrix);
+
+            MPI_Datatype memtype;
+            MPI_Type_create_subarray(2, memsizes, lsizes, start_ind, MPI_ORDER_C, MPI_DOUBLE, &memtype);
+            MPI_Type_commit(&memtype);
+
+            MPI_File fp;
+            MPI_File_open(comm2D, "results_2D.bin", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fp);
+            MPI_File_set_view(fp, 0, MPI_DOUBLE, filetype, "native", MPI_INFO_NULL);
             
             // Escrever ficheiro binário
-            MPI_File_write_all(pf, Vnew, 1, localmatrix, MPI_STATUS_IGNORE);
-            MPI_File_close(&pf);
-            
-            
-            MPI_Type_free(&submatrix);
-            MPI_Type_free(&localmatrix);
-            
-            if (newid == manager_rank) {
-                printf("%f seg para escrever ficheiro.\n", MPI_Wtime()-tm1);
+            MPI_File_write_all(fp, Vnew, 1, memtype, MPI_STATUS_IGNORE);
+            MPI_File_close(&fp);
+
+            MPI_Type_free(&filetype);
+            MPI_Type_free(&memtype);
+
+            if (newid == manager_rank)
+            {
+                printf("Escrita demorou %f seg\n", MPI_Wtime()-tm1);
             }
-// ----------------------- // ----------------------- // -----------------------
+
             break;
         }
 
