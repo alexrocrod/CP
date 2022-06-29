@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 
     MPI_Cart_shift(comm1D, 0, 1, &nbrbottom , &nbrtop);
 
-    // printf("myid=%d, newid=%d, bot=%d, top=%d\n", myid, newid, nbrbottom, nbrtop);   
+    printf("myid=%d, newid=%d, bot=%d, top=%d\n", myid, newid, nbrbottom, nbrtop);   
 
     int firstrow;
     int myrows;
@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
                 {
                     for (int j = 0; i < nx; j++)
                     {
-                        fprintf(pfile, "%1.0f ", V[i][j]);
+                        fprintf(pfile, "%.5f ", V[i][j]);
                     }
                     fprintf(pfile,"\n");
                 }
@@ -207,6 +207,10 @@ int main(int argc, char *argv[])
                 {
                    MPI_Send(Vnew[i], nx, MPI_DOUBLE, 0, firstrow + i - 1, comm1D); 
                 } 
+                if (newid == nprocs -1)
+                {
+                    MPI_Send(Vnew[myrows+1], nx, MPI_DOUBLE, 0, ny-1, comm1D);
+                }
             }
 
             break;
