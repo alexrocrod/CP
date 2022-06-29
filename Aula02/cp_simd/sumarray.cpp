@@ -83,10 +83,19 @@ void print_array(int *a, int size)
 void initArrays( int *a, int *b, int *c, int size )
 {
     for (int i=0; i< size; i++) {
-        a[i]=(i<<16)+1;
-        b[i]=0xffff;
+    //     a[i]=(i<<16)+1;
+    //     b[i]=0xffff;
         c[i]=0;
     }
+    a[0] = 0xbbb0;
+    a[1] = 0xff00;
+    a[2] = 0xc678;
+    a[3] = 0xa574;
+
+    b[0] = 0x0afb;
+    b[1] = 0x5106;
+    b[2] = 0xa098;
+    b[3] = 0x1b1f;
 }
 
 
@@ -95,9 +104,10 @@ void initArrays( int *a, int *b, int *c, int size )
  */
 int main(int argc, char* argv[])
 {
-    int size = atoi(argv[1])*4;
-    printf("size: %d\n",size);
-    // int size = SIZE;
+    // int size = atoi(argv[1])*4;
+    int size = 1*4;
+    // printf("size: %d\n",size);
+    // // int size = SIZE;
     int a[size];
     int b[size],c[size];
     
@@ -109,18 +119,26 @@ int main(int argc, char* argv[])
     nelemsum=size;
     initArrays(a,b,c,nelemsum);
 
+    // int a[] = {0xbbb0,0xff00,0xc678,0xa574};
+    // int b[] = {0x0afb,0x5106,0xa098,0x1b1f};
+    // int c[] = {0,0,0,0};
+
     // test classic code
     init = clock();
     for(n=0;n<REPEAT;n++)
         sumarray(a,b,c,nelemsum);
     end = clock();
 
-    print_array(c,12);
+    int nprint = nelemsum;
+    if (nelemsum>12) nprint = 12;
+    
+    print_array(c,nprint);
 
     float sum_time =  (end-init)/(CLOCKS_PER_SEC*1.0);
 
     printf("sumarray time = %f\n",sum_time);
 
+    
     //initialize arrays
     initArrays(a,b,c,nelemsum);
 
@@ -130,7 +148,8 @@ int main(int argc, char* argv[])
         sumarray_mmx(a,b,c,nelemsum);
     end = clock();
 
-    print_array(c,12);
+    
+    print_array(c,nprint);
 
     float sumMMX_time =  (end-init)/(CLOCKS_PER_SEC*1.0);
 
@@ -145,7 +164,7 @@ int main(int argc, char* argv[])
         sumarray_sse(a,b,c,nelemsum);
     end = clock();
 
-    print_array(c,12);
+    print_array(c,nprint);
 
     float sumSSE_time =  (end-init)/(CLOCKS_PER_SEC*1.0);
 
