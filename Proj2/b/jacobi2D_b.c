@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
             MPI_Type_commit(&memtype);
 
             MPI_File fp;
-            MPI_File_open(comm2D, "results_2D.bin", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fp);
+            MPI_File_open(comm2D, "results_b.bin", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fp);
             MPI_File_set_view(fp, 0, MPI_DOUBLE, filetype, "native", MPI_INFO_NULL);
             
             // Escrever ficheiro binário
