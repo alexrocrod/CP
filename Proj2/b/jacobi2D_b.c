@@ -3,6 +3,18 @@
 // Alexandre Rodrigues 92993
 // Gustavo Morais 92978
 
+// b)
+
+// Adapte o programa para usar condições 
+// fronteira periódicas em ambas as direções, 𝑥 e 𝑦. Note que, com fronteiras periódicas, os valores 
+// 𝑉𝑖,𝑗 nas fronteiras do domínio não são fixados à partida, e têm de ser calculados da mesma forma 
+// que os do interior do domínio, recorrendo aos seus 4 vizinhos. Mais concretamente, os pontos de 
+// índices  (0,𝑗)  e  (𝑛𝑦 −1,𝑗)  são  vizinhos,  assim  como  o  são  os  pontos  (𝑖,0)  e  (𝑖,𝑛𝑥 −1),  o  que 
+// implicará comunicações adicionais  ‘através’  das fronteiras. Note que, devido às condições 
+// fronteira periódicas, em cada linha e coluna o número de pontos é igual ao número de intervalos 
+// entre  pontos,  o  que  significa  que  ℎ𝑥 =2/𝑛𝑥  e  ℎ𝑦 =2/𝑛𝑦.
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <mpi.h>
@@ -247,7 +259,7 @@ int main(int argc, char *argv[])
             MPI_Type_commit(&memtype);
 
             MPI_File fp;
-            MPI_File_open(comm2D, "results_a.bin", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fp);
+            MPI_File_open(comm2D, "results_2D.bin", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fp);
             MPI_File_set_view(fp, 0, MPI_DOUBLE, filetype, "native", MPI_INFO_NULL);
             
             // Escrever ficheiro binário
