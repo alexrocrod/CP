@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
         
     }
 
-    // initialize to zeros (but calloc already does it)
+    // TODO: Alterar nestes 4 fors para condicoes fronteira
     if (newid == manager_rank || newid == 1){
         for (int j = 0; j < mycols+2; j++)
         {
@@ -161,7 +161,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    // initialize to zeros (but calloc already does it)
     if (newid == nprocs - 1 || newid == nprocs - 1){
         for (int j = 0; j < mycols + 2; j++)
         {
