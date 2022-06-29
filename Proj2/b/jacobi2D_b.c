@@ -5,8 +5,9 @@
 
 // b)
 
-// Adapte o programa para usar condições 
-// fronteira periódicas em ambas as direções, 𝑥 e 𝑦. Note que, com fronteiras periódicas, os valores 
+// TODO:
+// Adapte o programa para usar condições fronteira periódicas em ambas as direções, 𝑥 e 𝑦. 
+// Note que, com fronteiras periódicas, os valores 
 // 𝑉𝑖,𝑗 nas fronteiras do domínio não são fixados à partida, e têm de ser calculados da mesma forma 
 // que os do interior do domínio, recorrendo aos seus 4 vizinhos. Mais concretamente, os pontos de 
 // índices  (0,𝑗)  e  (𝑛𝑦 −1,𝑗)  são  vizinhos,  assim  como  o  são  os  pontos  (𝑖,0)  e  (𝑖,𝑛𝑥 −1),  o  que 
@@ -67,6 +68,7 @@ int main(int argc, char *argv[])
 
     int nprocs_col = (int) nprocs/2;
 
+    // TODO: Adaptar para periodic
     int ndims = 2;
     int dims[2] = {nprocs_col, 2};
     int periodic[2] = {0,0};
@@ -162,7 +164,7 @@ int main(int argc, char *argv[])
         
     }
 
-    // initialize to zeros (but calloc already does it)
+    // TODO: Usar da a) 
     if (newid == manager_rank || newid == 1){
         for (int j = 0; j < mycols+2; j++)
         {
@@ -171,7 +173,6 @@ int main(int argc, char *argv[])
         }
     }
 
-    // initialize to zeros (but calloc already does it)
     if (newid == nprocs - 1 || newid == nprocs - 1){
         for (int j = 0; j < mycols + 2; j++)
         {

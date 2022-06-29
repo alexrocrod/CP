@@ -3,6 +3,9 @@
 // Alexandre Rodrigues 92993
 // Gustavo Morais 92978
 
+// a)
+
+// TODO:
 // incorporar as seguintes condições fronteira: 𝑉(−1,𝑦)=(1+𝑦)/4, 𝑉(𝑥,−1)=(1+𝑥)/4, 𝑉(𝑥,1)=(3+𝑥)/4 e 𝑉(1,𝑦)=(3+𝑦)/4. 
 
 #include <stdlib.h>
