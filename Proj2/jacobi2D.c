@@ -11,7 +11,7 @@
 #define min(a,b) (((a)<(b))?(a):(b))
 
 #define NXMAX 500
-#define TOL 1e-7
+#define TOL 1e-6
 #define MAXIT 5e5
 #define L 1
 
@@ -34,8 +34,9 @@ int main(int argc, char *argv[])
     
     if (myid == manager_rank)
     {
-        printf("Introduza numero de pontos {max %d, 0 para sair}: \n",NXMAX);
-        scanf(" %d", &nx);
+        // printf("Introduza numero de pontos {max %d, 0 para sair}: \n",NXMAX);
+        // scanf(" %d", &nx);
+        nx = 100; // standard
     }
     MPI_Bcast(&nx, 1, MPI_INT, 0, MPI_COMM_WORLD);
     ny = nx;
