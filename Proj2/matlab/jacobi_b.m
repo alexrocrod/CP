@@ -67,3 +67,5 @@ ylim([-L L])
 xlabel('\it{x}')
 ylabel('\it{y}')
 title('array\_MATLAB')
+
+saveas(gcf,"jac_b.jpg")
