@@ -45,7 +45,7 @@
 #define NXMAX 500
 #define TOL 1e-6
 #define MAXIT 5e5
-#define L 1
+#define L 1.0
 
 double f(double x, double y)
 {
@@ -70,10 +70,11 @@ int main(int argc, char *argv[])
         // scanf(" %d", &nx);
         nx = 100; // standard
     }
-    MPI_Bcast(&nx, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    MPI_Bcast(&nx, 1, MPI_INT, manager_rank, MPI_COMM_WORLD);
     ny = nx;
 
-    if (nx == manager_rank)
+    if (nx == 0)
     {
         MPI_Finalize();
         return 0;
@@ -110,6 +111,8 @@ int main(int argc, char *argv[])
     MPI_Cart_shift(comm2D, 1, 1, &nbrleft , &nbrright);
 
     printf("myid=%d, newid=%d, bot=%d, top=%d, left=%d, right=%d\n", myid, newid, nbrbottom, nbrtop, nbrleft, nbrright);   
+    
+    MPI_Barrier(comm2D);
 
     int firstrow, firstcol;
     int myrows, mycols;
@@ -127,9 +130,11 @@ int main(int argc, char *argv[])
         // Linhas
         for (int i = 0; i < nprocs_col; i++)
         {
-            listfirstrow[2*i] = 1 + i *  nrows;
+            // listfirstrow[2*i] = 1 + i *  nrows;
+            listfirstrow[2*i] = i *  (nrows+1);
             listmyrows[2*i] = nrows + 1;
-            listfirstrow[2*i+1] = 1 + i *  nrows;
+            // listfirstrow[2*i+1] = 1 + i *  nrows;
+            listfirstrow[2*i+1] = i *  (nrows+1);
             listmyrows[2*i+1] = nrows + 1;
         }
         // Altera o numero de linhas do penultimo e do ultimo
@@ -145,7 +150,7 @@ int main(int argc, char *argv[])
             listfirstcol[2*i] = 0;
             listmycols[2*i] = ncols_temp + 1;
             listfirstcol[2*i+1] = ncols_temp + 1;
-            listmycols[2*i+1] = nx - 1 - ncols_temp;
+            listmycols[2*i+1] = nx - 1 - ncols_temp;            
         }
 
         MPI_Scatter(listfirstrow, 1, MPI_INT, &firstrow, 1, MPI_INT, newid, comm2D);
@@ -164,7 +169,7 @@ int main(int argc, char *argv[])
         MPI_Scatter(MPI_BOTTOM, 1, MPI_INT, &mycols, 1, MPI_INT, manager_rank, comm2D);
     }
 
-    // MPI_Barrier(comm2D);
+    MPI_Barrier(comm2D);
     printf("newid=%d, firstrow=%d, lastrow=%d, firstcol=%d, lastcol=%d\n", newid, firstrow, firstrow+myrows-1, firstcol, firstcol+mycols-1);
 
     // Agora com +4
@@ -217,9 +222,9 @@ int main(int argc, char *argv[])
         //     }
             
         // }
-        for (int j = 1; j < mycols + 2 ; j++)
+        for (int j = 2; j < mycols + 2 ; j++)
         {
-            for (int i = 1; i < myrows + 2; i++)
+            for (int i = 2; i < myrows + 2; i++)
             {
                 Vnew[i][j] = (W/60)*(16*Vold[i-1][j] + 16*Vold[i+1][j] + 16*Vold[i][j-1]+ 16*Vold[i][j+1] 
                      - Vold[i-2][j] - Vold[i+2][j] - Vold[i][j-2] - Vold[i][j+2] -12*h*h*myf[i][j]) + (1-W)*Vold[i][j];
@@ -293,7 +298,7 @@ int main(int argc, char *argv[])
         // comunicações sentido ascendente
         // MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[0] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
         // MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
-        MPI_Sendrecv(Vnew[1], mycols+4, MPI_DOUBLE, nbrtop, 0, Vnew[myrows+2] , mycols+4, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(Vnew[2], mycols+4, MPI_DOUBLE, nbrtop, 0, Vnew[myrows+2] , mycols+4, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
         
         // comunicações sentido descendente
         // MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
