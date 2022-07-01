@@ -13,9 +13,9 @@ nx=100;
 ny=nx;
 
 % alinea = 'a';
-alinea = 'b';
+% alinea = 'b';
 % alinea = 'c';
-% alinea = 'd';
+alinea = 'd';
 
 % fileID = fopen('results_2D.bin');
 
