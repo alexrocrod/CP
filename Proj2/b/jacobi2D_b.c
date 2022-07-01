@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
 
     int nprocs_col = (int) nprocs/2;
 
-    // TODO: Adaptar para periodic
+    // DONE-TODO: Adaptar para periodic
     int ndims = 2;
     int dims[2] = {nprocs_col, 2};
     int periodic[2] = {1,1};
@@ -226,7 +226,8 @@ int main(int argc, char *argv[])
         double sums[2] = {0.0, 0.0};
         double global_sums[2];
 
-        for (int j = 1; j < mycols -1 ; j++)
+        // for (int j = 1; j < mycols -1 ; j++)
+        for (int j = 1; j < mycols + 1 ; j++)
         {
             for (int i = 1; i < myrows + 1; i++)
             {
