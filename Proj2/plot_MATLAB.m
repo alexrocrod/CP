@@ -12,7 +12,13 @@ close all
 nx=100;
 ny=nx;
 
-fileID = fopen('results_2D.bin');
+% fileID = fopen('results_2D.bin');
+
+fileID = fopen('a/results_a.bin');
+% fileID = fopen('b/results_b.bin');
+% fileID = fopen('c/results_c.bin');
+% fileID = fopen('d/results_d.bin');
+
 array_MPI = fread(fileID, [ny nx],'double');
 fclose(fileID);
 
