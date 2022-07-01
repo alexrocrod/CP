@@ -155,37 +155,37 @@ int main(int argc, char *argv[])
         
     }
 
-    // TODO: Alterar nestes 4 fors para condicoes fronteira
-    if (newid == manager_rank || newid == 1){
+    // DONE-TODO: Alterar nestes 4 fors para condicoes fronteira
+    if (newid == manager_rank || newid == 1){ // y = -L,  V(x,-1)
         for (int j = 0; j < mycols+2; j++)
         {
-            Vnew[0][j] = 0.;
-            Vold[0][j] = 0.;
+            Vnew[0][j] = (1 + (-L + h*(firstcol+j-1)))/4;
+            Vold[0][j] = Vnew[0][j];
         }
     }
 
-    if (newid == nprocs - 1 || newid == nprocs - 1){
+    if (newid == nprocs - 1 || newid == nprocs - 1){ // y = L,  V(x,1)
         for (int j = 0; j < mycols + 2; j++)
         {
-            Vnew[myrows+1][j] = 0.;
-            Vold[myrows+1][j] = 0.;
+            Vnew[myrows+1][j] = (3 + (-L + h*(firstcol+j-1)))/4;
+            Vold[myrows+1][j] = Vnew[myrows+1][j];
         }
     }
 
     if (newid % 2 == 0)
     {
-        for (int i = 1; i < myrows + 1; i++)
+        for (int i = 1; i < myrows + 1; i++) // x = -L,  V(-1,y)
         {
-            Vnew[i][0] = 0.;
-            Vold[i][0] = 0.;
+            Vnew[i][0] = (1 + (L - h*(firstrow+i-1)) )/4;
+            Vold[i][0] = Vnew[i][0] ;
         }
     }
     else
     {
-       for (int i = 1; i < myrows + 1; i++)
+       for (int i = 1; i < myrows + 1; i++) // x = -L,  V(1,y)
         {
-            Vnew[i][mycols+1] = 0.;
-            Vold[i][mycols+1] = 0.;
+            Vnew[i][mycols+1] = (3 + (L - h*(firstrow+i-1)) )/4;
+            Vold[i][mycols+1] = Vnew[i][mycols+1];
         } 
     }
 
