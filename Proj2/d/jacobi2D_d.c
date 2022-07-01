@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 
     int ndims = 2;
     int dims[2] = {nprocs_col, 2};
-    int periodic[2] = {0,0};
+    int periodic[2] = {1,1};
     MPI_Comm comm2D;
     int newid;
     int nbrbottom, nbrtop, nbrleft, nbrright;
@@ -146,23 +146,47 @@ int main(int argc, char *argv[])
         // Linhas
         for (int i = 0; i < nprocs_col; i++)
         {
-            listfirstrow[2*i] = 1 + i *  nrows;
-            listmyrows[2*i] = nrows;
-            listfirstrow[2*i+1] = 1 + i *  nrows;
-            listmyrows[2*i+1] = nrows;
+            // listfirstrow[2*i] = 1 + i *  nrows;
+            // listmyrows[2*i] = nrows;
+            // listfirstrow[2*i+1] = 1 + i *  nrows;
+            // listmyrows[2*i+1] = nrows;
+
+            // listfirstrow[2*i] = 1 + i *  nrows;
+            // listmyrows[2*i] = nrows + 1;
+            // listfirstrow[2*i+1] = 1 + i *  nrows;
+            // listmyrows[2*i+1] = nrows + 1;
+            
+            // listfirstrow[2*i] = 1 + i *  nrows;
+            listfirstrow[2*i] = i *  (nrows+1);
+            listmyrows[2*i] = nrows + 1;
+            // listfirstrow[2*i+1] = 1 + i *  nrows;
+            listfirstrow[2*i+1] = i *  (nrows+1);
+            listmyrows[2*i+1] = nrows + 1;
         }
-        // altera o numero de linhas do penultimo e do ultimo
-        listmyrows[nprocs-2] = ny - 2 - (nprocs_col - 1) * nrows;
-        listmyrows[nprocs-1] = ny - 2 - (nprocs_col - 1) * nrows;
+        // Altera o numero de linhas do penultimo e do ultimo
+        // listmyrows[nprocs-2] = ny - 2 - (nprocs_col - 1) * nrows;
+        // listmyrows[nprocs-1] = ny - 2 - (nprocs_col - 1) * nrows;
+
+        // Agora inclui mais 1 linha
+        listmyrows[nprocs-2] = ny - 1 - (nprocs_col - 1) * nrows;
+        listmyrows[nprocs-1] = ny - 1 - (nprocs_col - 1) * nrows;
+        
+        // Carlota usa myrows: rem-1
+        // rem = ny - nrows*(nprocs_col-1) 
+        // rem-1= ny - nrows*(nprocs_col-1) -1
 
         // Colunas
         int ncols_temp = (int)((nx-2)/2);
         for (int i = 0; i < nprocs_col; i++)
         {
-            listfirstcol[2*i] = 1;
-            listmycols[2*i] = ncols_temp;
+            // listfirstcol[2*i] = 1;
+            // listmycols[2*i] = ncols_temp;
+            // listfirstcol[2*i+1] = ncols_temp + 1;
+            // listmycols[2*i+1] = nx - 2 - ncols_temp;
+            listfirstcol[2*i] = 0;
+            listmycols[2*i] = ncols_temp + 1;
             listfirstcol[2*i+1] = ncols_temp + 1;
-            listmycols[2*i+1] = nx - 2 - ncols_temp;
+            listmycols[2*i+1] = nx - 1 - ncols_temp;
         }
 
         MPI_Scatter(listfirstrow, 1, MPI_INT, &firstrow, 1, MPI_INT, newid, comm2D);
@@ -190,7 +214,8 @@ int main(int argc, char *argv[])
     Vnew = calloc(myrows + 2, sizeof(*Vnew));
     myf = calloc(myrows + 2, sizeof(*myf));
 
-    double h = ((double)2 * L) / ((double) nx - 1);
+    // double h = ((double)2 * L) / ((double) nx - 1);
+    double h = ((double)2 * L) / ((double) nx);
 
     for (int j = 1; j < mycols + 1 ; j++)
     {
@@ -201,41 +226,6 @@ int main(int argc, char *argv[])
         
     }
 
-    // initialize to zeros (but calloc already does it)
-    if (newid == manager_rank || newid == 1){
-        for (int j = 0; j < mycols+2; j++)
-        {
-            Vnew[0][j] = 0.;
-            Vold[0][j] = 0.;
-        }
-    }
-
-    // initialize to zeros (but calloc already does it)
-    if (newid == nprocs - 1 || newid == nprocs - 1){
-        for (int j = 0; j < mycols + 2; j++)
-        {
-            Vnew[myrows+1][j] = 0.;
-            Vold[myrows+1][j] = 0.;
-        }
-    }
-
-    if (newid % 2 == 0)
-    {
-        for (int i = 1; i < myrows + 1; i++)
-        {
-            Vnew[i][0] = 0.;
-            Vold[i][0] = 0.;
-        }
-    }
-    else
-    {
-       for (int i = 1; i < myrows + 1; i++)
-        {
-            Vnew[i][mycols+1] = 0.;
-            Vold[i][mycols+1] = 0.;
-        } 
-    }
-
     MPI_Datatype column;
     MPI_Type_vector(myrows + 2, 1, mycols + 2 , MPI_DOUBLE, &column);
     MPI_Type_commit(&column);
@@ -244,19 +234,41 @@ int main(int argc, char *argv[])
 
     for (int iter = 0; iter < MAXIT; iter++)
     {
-        double sums[2] = {0.0,0.0};
+        double sums[2] = {0.0, 0.0};
         double global_sums[2];
 
-        for (int j = 1; j < mycols -1 ; j++)
+        for (int i = 1; i < myrows + 1; i++)
         {
-            for (int i = 1; i < myrows + 1; i++)
+            for (int j = 1; j < mycols + 1 ; j+=2)
             {
                 Vnew[i][j] = (Vold[i+1][j] + Vold[i-1][j] + Vold[i][j+1] + Vold[i][j-1]  + h * h  * myf[i][j]) / 4.0;
                 sums[0] += (Vnew[i][j] - Vold[i][j]) * (Vnew[i][j] - Vold[i][j]);
                 sums[1] += Vnew[i][j] * Vnew[i][j];
-            }
-            
+            }  
         }
+
+        // Comunicar aos vizinhos
+        MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrtop, 0, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrbottom, 1, &Vnew[0][1], mycols, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[1][1], 1, column, nbrleft, 2, &Vnew[1][mycols+1], 1, column, nbrright, 2, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[1][mycols], 1, column, nbrright, 3, &Vnew[1][0], 1, column, nbrleft, 3, comm2D, MPI_STATUS_IGNORE);
+
+       
+        // Calcular ímpares
+        for (int i=1; i<myrows+1; i++) {
+            for (int j=2; j<mycols+1; j+=2) {
+                    Vnew[i][j] = 0.25 * (Vnew[i-1][j] + Vnew[i][j-1] + Vnew[i][j+1] + Vnew[i+1][j] - h * h * myf[i][j]);
+                    sums[0] += (Vnew[i][j]-Vold[i][j])*(Vnew[i][j]-Vold[i][j]);
+                    sums[1] += Vnew[i][j]*Vnew[i][j];
+            }
+        }
+
+        // Comunicar aos vizinhos 
+        MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrtop, 0, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrbottom, 1, &Vnew[0][1], mycols, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[1][1], 1, column, nbrleft, 2, &Vnew[1][mycols+1], 1, column, nbrright, 2, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[1][mycols], 1, column, nbrright, 3, &Vnew[1][0], 1, column, nbrleft, 3, comm2D, MPI_STATUS_IGNORE);
+
 
         MPI_Allreduce(sums, global_sums, 2, MPI_DOUBLE, MPI_SUM, comm2D);
         
@@ -269,17 +281,19 @@ int main(int argc, char *argv[])
             }
 
             int gsizes[2] = {ny, nx};
-            int lsizes[2] = {myrows, mycols + 1};
-            int start_ind[2] = {firstrow, firstcol - 1 + (newid % 2)};
+            // int lsizes[2] = {myrows, mycols + 1};
+            // int start_ind[2] = {firstrow, firstcol - 1 + (newid % 2)};
+            int lsizes[2] = {myrows, mycols};
+            int start_ind[2] = {firstrow, firstcol};
 
-            if (newid == 0 || newid == 1) {
-                lsizes[0]++;
-                start_ind[0]--;
-            }
+            // if (newid == 0 || newid == 1) {
+            //     lsizes[0]++;
+            //     start_ind[0]--;
+            // }
 
-            if (newid == nprocs-2 || newid == nprocs-1) {
-                lsizes[0]++;
-            }
+            // if (newid == nprocs-2 || newid == nprocs-1) {
+            //     lsizes[0]++;
+            // }
 
             MPI_Datatype filetype;
             MPI_Type_create_subarray(2, gsizes, lsizes, start_ind, MPI_ORDER_C, MPI_DOUBLE, &filetype);
@@ -317,11 +331,13 @@ int main(int argc, char *argv[])
         }
 
         // comunicações sentido ascendente
-        MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[0] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
-
+        // MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[0] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
+        
         // comunicações sentido descendente
-        MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
-
+        // MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[0] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
+        
         // comunicações sentido para direita
         MPI_Sendrecv(&(Vnew[0][mycols]), 1, column, nbrright, 2, &(Vnew[0][0]), 1, column, nbrleft, 2, comm2D, MPI_STATUS_IGNORE);
 
