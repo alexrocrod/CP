@@ -237,11 +237,12 @@ int main(int argc, char *argv[])
         double sums[2] = {0.0, 0.0};
         double global_sums[2];
 
+        // TODO: Usar como pontos pares os q i+j é par, i e j da Vold global
         for (int i = 1; i < myrows + 1; i++)
         {
             for (int j = 1; j < mycols + 1 ; j+=2)
             {
-                Vnew[i][j] = (Vold[i+1][j] + Vold[i-1][j] + Vold[i][j+1] + Vold[i][j-1]  + h * h  * myf[i][j]) / 4.0;
+                Vnew[i][j] = (Vnew[i+1][j] + Vnew[i-1][j] + Vnew[i][j+1] + Vnew[i][j-1]  + h * h  * myf[i][j]) / 4.0;
                 sums[0] += (Vnew[i][j] - Vold[i][j]) * (Vnew[i][j] - Vold[i][j]);
                 sums[1] += Vnew[i][j] * Vnew[i][j];
             }  
@@ -257,7 +258,7 @@ int main(int argc, char *argv[])
         // Calcular ímpares
         for (int i=1; i<myrows+1; i++) {
             for (int j=2; j<mycols+1; j+=2) {
-                    Vnew[i][j] = 0.25 * (Vnew[i-1][j] + Vnew[i][j-1] + Vnew[i][j+1] + Vnew[i+1][j] - h * h * myf[i][j]);
+                    Vnew[i][j] = (Vnew[i-1][j] + Vnew[i][j-1] + Vnew[i][j+1] + Vnew[i+1][j] - h * h * myf[i][j]) / 4.0 ;
                     sums[0] += (Vnew[i][j]-Vold[i][j])*(Vnew[i][j]-Vold[i][j]);
                     sums[1] += Vnew[i][j]*Vnew[i][j];
             }
