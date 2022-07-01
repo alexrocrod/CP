@@ -13,8 +13,8 @@ nx=100;
 ny=nx;
 
 % alinea = 'a';
-% alinea = 'b';
-alinea = 'c';
+alinea = 'b';
+% alinea = 'c';
 % alinea = 'd';
 
 % fileID = fopen('results_2D.bin');
