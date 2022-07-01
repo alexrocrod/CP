@@ -12,12 +12,15 @@ close all
 nx=100;
 ny=nx;
 
+% alinea = 'a';
+alinea = 'b';
+% alinea = 'c';
+% alinea = 'd';
+
 % fileID = fopen('results_2D.bin');
 
-fileID = fopen('b/results_b.bin');
-% fileID = fopen('b/results_b.bin');
-% fileID = fopen('c/results_c.bin');
-% fileID = fopen('d/results_d.bin');
+f = [alinea '/results_' alinea '.bin'];
+fileID = fopen(f);
 
 array_MPI = fread(fileID, [ny nx],'double');
 fclose(fileID);
@@ -40,5 +43,8 @@ ylim([-L L])
 xlabel('\it{x}')
 ylabel('\it{y}')
 title('array\_MPI')
+
+i = [alinea,'/img', upper(alinea), '.jpg'];
+saveas(gcf,i)
 
 
