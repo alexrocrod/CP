@@ -113,9 +113,17 @@ int main(int argc, char *argv[])
             // listmyrows[2*i] = nrows;
             // listfirstrow[2*i+1] = 1 + i *  nrows;
             // listmyrows[2*i+1] = nrows;
-            listfirstrow[2*i] = 1 + i *  nrows;
+
+            // listfirstrow[2*i] = 1 + i *  nrows;
+            // listmyrows[2*i] = nrows + 1;
+            // listfirstrow[2*i+1] = 1 + i *  nrows;
+            // listmyrows[2*i+1] = nrows + 1;
+            
+            // listfirstrow[2*i] = 1 + i *  nrows;
+            listfirstrow[2*i] = i *  (nrows+1);
             listmyrows[2*i] = nrows + 1;
-            listfirstrow[2*i+1] = 1 + i *  nrows;
+            // listfirstrow[2*i+1] = 1 + i *  nrows;
+            listfirstrow[2*i+1] = i *  (nrows+1);
             listmyrows[2*i+1] = nrows + 1;
         }
         // Altera o numero de linhas do penultimo e do ultimo
