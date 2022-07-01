@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 
     int ndims = 2;
     int dims[2] = {nprocs_col, 2};
-    int periodic[2] = {0,0};
+    int periodic[2] = {1,1};
     MPI_Comm comm2D;
     int newid;
     int nbrbottom, nbrtop, nbrleft, nbrright;
@@ -128,22 +128,24 @@ int main(int argc, char *argv[])
         for (int i = 0; i < nprocs_col; i++)
         {
             listfirstrow[2*i] = 1 + i *  nrows;
-            listmyrows[2*i] = nrows;
+            listmyrows[2*i] = nrows + 1;
             listfirstrow[2*i+1] = 1 + i *  nrows;
-            listmyrows[2*i+1] = nrows;
+            listmyrows[2*i+1] = nrows + 1;
         }
-        // altera o numero de linhas do penultimo e do ultimo
-        listmyrows[nprocs-2] = ny - 2 - (nprocs_col - 1) * nrows;
-        listmyrows[nprocs-1] = ny - 2 - (nprocs_col - 1) * nrows;
+        // Altera o numero de linhas do penultimo e do ultimo
+        // Agora inclui mais 1 linha
+        listmyrows[nprocs-2] = ny - 1 - (nprocs_col - 1) * nrows;
+        listmyrows[nprocs-1] = ny - 1 - (nprocs_col - 1) * nrows;
+        
 
         // Colunas
         int ncols_temp = (int)((nx-2)/2);
         for (int i = 0; i < nprocs_col; i++)
         {
-            listfirstcol[2*i] = 1;
-            listmycols[2*i] = ncols_temp;
+            listfirstcol[2*i] = 0;
+            listmycols[2*i] = ncols_temp + 1;
             listfirstcol[2*i+1] = ncols_temp + 1;
-            listmycols[2*i+1] = nx - 2 - ncols_temp;
+            listmycols[2*i+1] = nx - 1 - ncols_temp;
         }
 
         MPI_Scatter(listfirstrow, 1, MPI_INT, &firstrow, 1, MPI_INT, newid, comm2D);
@@ -165,74 +167,62 @@ int main(int argc, char *argv[])
     // MPI_Barrier(comm2D);
     printf("newid=%d, firstrow=%d, lastrow=%d, firstcol=%d, lastcol=%d\n", newid, firstrow, firstrow+myrows-1, firstcol, firstcol+mycols-1);
 
+    // Agora com +4
+    double (*Vold)[mycols+4], (*Vnew)[mycols+4], (*myf)[mycols+4];
+    Vold = calloc(myrows + 4, sizeof(*Vold));
+    Vnew = calloc(myrows + 4, sizeof(*Vnew));
+    myf = calloc(myrows + 4, sizeof(*myf));
 
-    double (*Vold)[mycols+2], (*Vnew)[mycols+2], (*myf)[mycols+2];
-    Vold = calloc(myrows + 2, sizeof(*Vold));
-    Vnew = calloc(myrows + 2, sizeof(*Vnew));
-    myf = calloc(myrows + 2, sizeof(*myf));
+    double h = ((double)2 * L) / ((double) nx);
 
-    double h = ((double)2 * L) / ((double) nx - 1);
+    double W = 15.0/16.0;
 
-    for (int j = 1; j < mycols + 1 ; j++)
+    // for (int j = 1; j < mycols + 1 ; j++)
+    // {
+    //     for (int i = 1; i < myrows + 1; i++)
+    //     {
+    //         myf[i][j] = f(-L + (firstcol + j - 1) * h, -L + (firstrow + i - 1) * h);
+    //     }
+        
+    // }
+    for (int j = 2; j < mycols + 2 ; j++)
     {
-        for (int i = 1; i < myrows + 1; i++)
+        for (int i = 2; i < myrows + 2; i++)
         {
-            myf[i][j] = f(-L + (firstcol + j - 1) * h, -L + (firstrow + i - 1) * h);
+            myf[i][j] = f(-L + (firstcol + j - 2) * h, -L + (firstrow + i - 2) * h);
         }
         
     }
 
-    // initialize to zeros (but calloc already does it)
-    if (newid == manager_rank || newid == 1){
-        for (int j = 0; j < mycols+2; j++)
-        {
-            Vnew[0][j] = 0.;
-            Vold[0][j] = 0.;
-        }
-    }
-
-    // initialize to zeros (but calloc already does it)
-    if (newid == nprocs - 1 || newid == nprocs - 1){
-        for (int j = 0; j < mycols + 2; j++)
-        {
-            Vnew[myrows+1][j] = 0.;
-            Vold[myrows+1][j] = 0.;
-        }
-    }
-
-    if (newid % 2 == 0)
-    {
-        for (int i = 1; i < myrows + 1; i++)
-        {
-            Vnew[i][0] = 0.;
-            Vold[i][0] = 0.;
-        }
-    }
-    else
-    {
-       for (int i = 1; i < myrows + 1; i++)
-        {
-            Vnew[i][mycols+1] = 0.;
-            Vold[i][mycols+1] = 0.;
-        } 
-    }
 
     MPI_Datatype column;
-    MPI_Type_vector(myrows + 2, 1, mycols + 2 , MPI_DOUBLE, &column);
+    // MPI_Type_vector(myrows + 2, 1, mycols + 2 , MPI_DOUBLE, &column);
+    MPI_Type_vector(myrows + 4, 1, mycols + 4, MPI_DOUBLE, &column);
     MPI_Type_commit(&column);
     
     double tm1 = MPI_Wtime();
 
     for (int iter = 0; iter < MAXIT; iter++)
     {
-        double sums[2] = {0.0,0.0};
+        double sums[2] = {0.0, 0.0};
         double global_sums[2];
 
-        for (int j = 1; j < mycols -1 ; j++)
+        // for (int j = 1; j < mycols -1 ; j++)
+        // {
+        //     for (int i = 1; i < myrows + 1; i++)
+        //     {
+        //         Vnew[i][j] = (Vold[i+1][j] + Vold[i-1][j] + Vold[i][j+1] + Vold[i][j-1]  + h * h  * myf[i][j]) / 4.0;
+        //         sums[0] += (Vnew[i][j] - Vold[i][j]) * (Vnew[i][j] - Vold[i][j]);
+        //         sums[1] += Vnew[i][j] * Vnew[i][j];
+        //     }
+            
+        // }
+        for (int j = 1; j < mycols + 2 ; j++)
         {
-            for (int i = 1; i < myrows + 1; i++)
+            for (int i = 1; i < myrows + 2; i++)
             {
-                Vnew[i][j] = (Vold[i+1][j] + Vold[i-1][j] + Vold[i][j+1] + Vold[i][j-1]  + h * h  * myf[i][j]) / 4.0;
+                Vnew[i][j] = (W/60)*(16*Vold[i-1][j] + 16*Vold[i+1][j] + 16*Vold[i][j-1]+ 16*Vold[i][j+1] 
+                     - Vold[i-2][j] - Vold[i+2][j] - Vold[i][j-2] - Vold[i][j+2] -12*h*h*myf[i][j]) + (1-W)*Vold[i][j];
                 sums[0] += (Vnew[i][j] - Vold[i][j]) * (Vnew[i][j] - Vold[i][j]);
                 sums[1] += Vnew[i][j] * Vnew[i][j];
             }
@@ -250,24 +240,27 @@ int main(int argc, char *argv[])
             }
 
             int gsizes[2] = {ny, nx};
-            int lsizes[2] = {myrows, mycols + 1};
-            int start_ind[2] = {firstrow, firstcol - 1 + (newid % 2)};
+            // int lsizes[2] = {myrows, mycols + 1};
+            // int start_ind[2] = {firstrow, firstcol - 1 + (newid % 2)};
+            int lsizes[2] = {myrows, mycols};
+            int start_ind[2] = {firstrow, firstcol};
 
-            if (newid == 0 || newid == 1) {
-                lsizes[0]++;
-                start_ind[0]--;
-            }
+            // if (newid == 0 || newid == 1) {
+            //     lsizes[0]++;
+            //     start_ind[0]--;
+            // }
 
-            if (newid == nprocs-2 || newid == nprocs-1) {
-                lsizes[0]++;
-            }
+            // if (newid == nprocs-2 || newid == nprocs-1) {
+            //     lsizes[0]++;
+            // }
 
             MPI_Datatype filetype;
             MPI_Type_create_subarray(2, gsizes, lsizes, start_ind, MPI_ORDER_C, MPI_DOUBLE, &filetype);
             MPI_Type_commit(&filetype);
           
             // Criar novo datatype para enviar apenas pontos locais pelos quais é responsável (não queremos enviar pontos fantasma)
-            int memsizes[2] = {myrows+2, mycols+2};
+            // int memsizes[2] = {myrows+2, mycols+2};
+            int memsizes[2] = {myrows+4, mycols+4};
             start_ind[0] = 1;
             start_ind[1] = newid % 2;
             if (newid == 0 || newid == 1) {
@@ -298,24 +291,47 @@ int main(int argc, char *argv[])
         }
 
         // comunicações sentido ascendente
-        MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[0] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
-
+        // MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[0] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
+        // MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(Vnew[1], mycols+4, MPI_DOUBLE, nbrtop, 0, Vnew[myrows+2] , mycols+4, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
+        
         // comunicações sentido descendente
-        MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
-
+        // MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
+        // MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[0] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(Vnew[myrows], mycols+4, MPI_DOUBLE, nbrbottom, 1, Vnew[0] , mycols+4, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
+        
         // comunicações sentido para direita
+        // MPI_Sendrecv(&(Vnew[0][mycols]), 1, column, nbrright, 2, &(Vnew[0][0]), 1, column, nbrleft, 2, comm2D, MPI_STATUS_IGNORE);
         MPI_Sendrecv(&(Vnew[0][mycols]), 1, column, nbrright, 2, &(Vnew[0][0]), 1, column, nbrleft, 2, comm2D, MPI_STATUS_IGNORE);
 
         // comunicações sentido para esquerda
-        MPI_Sendrecv(&(Vnew[0][1]), 1, column, nbrleft, 3, &(Vnew[0][mycols+1]), 1, column, nbrright, 3, comm2D, MPI_STATUS_IGNORE);
+        // MPI_Sendrecv(&(Vnew[0][1]), 1, column, nbrleft, 3, &(Vnew[0][mycols+1]), 1, column, nbrright, 3, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&(Vnew[0][2]), 1, column, nbrleft, 3, &(Vnew[0][mycols+2]), 1, column, nbrright, 3, comm2D, MPI_STATUS_IGNORE);
         
-        for (int i = 0; i < myrows + 2; i++)
+
+        // Outras comms.....
+        MPI_Sendrecv(Vnew[3], mycols+4, MPI_DOUBLE, nbrtop, 5, Vnew[myrows+3], mycols+4, MPI_DOUBLE, nbrbottom, 5, comm2D, MPI_STATUS_IGNORE);
+
+        MPI_Sendrecv(Vnew[myrows+1], mycols+4, MPI_DOUBLE, nbrbottom, 6, Vnew[1], mycols+4, MPI_DOUBLE, nbrtop, 6, comm2D, MPI_STATUS_IGNORE);
+        
+        MPI_Sendrecv(&(Vnew[0][3]), 1, column, nbrleft, 7, &(Vnew[0][mycols+3]), 1, column, nbrright, 7, comm2D, MPI_STATUS_IGNORE);
+        
+        MPI_Sendrecv(&(Vnew[0][mycols+1]), 1, column, nbrright, 8, &(Vnew[0][1]), 1, column, nbrleft, 8, comm2D, MPI_STATUS_IGNORE);
+
+
+        // for (int i = 0; i < myrows + 2; i++)
+        // {
+        //     for (int j = 0; j < mycols + 2; j++)
+        //     {
+        //         Vold[i][j] = Vnew[i][j];
+        //     }       
+        // }
+        for (int i = 0; i < myrows + 4; i++)
         {
-            for (int j = 0; j < mycols + 2; j++)
+            for (int j = 0; j < mycols + 4; j++)
             {
                 Vold[i][j] = Vnew[i][j];
-            }
-            
+            }       
         }
         
     }
