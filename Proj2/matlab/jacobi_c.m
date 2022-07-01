@@ -37,12 +37,12 @@ for k = 1:maxit
             if (j0 <= 0)
                 j0 = j0+N;
                 j00 = j00+N;
-            elseif (j1 >= N)
+            elseif (j1 > N)
                 j1 = j1-N+1;
                 j2 = j2-N+1;
             elseif (j00 == 0)
                 j00 = N;
-            elseif (j2 == N)
+            elseif (j2 == N+1)
                 j2 = 1;
             end
 
@@ -54,17 +54,17 @@ for k = 1:maxit
             if (i0 <= 0)
                 i0 = i0+N;
                 i00 = i00+N;
-            elseif (i1 >= N)
+            elseif (i1 > N)
                 i1 = i1-N+1;
                 i2 = i2-N+1;
             elseif (i00 == 0)
                 i00 = N;
-            elseif (i2 == N)
+            elseif (i2 == N+1)
                 i2 = 1;
             end
 
-            Vnew(i,j)= W/60*(16*Vnew(i0,j)+16*Vnew(i1,j)+16*Vnew(i,j0)+16*Vnew(i,j1)-12*h^2*f + ...
-                Vnew(i2,j)+Vnew(i00,j)+Vnew(i,j2)+Vnew(i,j00))+ (1-W)*Vnew(i,j);
+            Vnew(i,j)= W/60*(16*Vnew(i0,j)+16*Vnew(i1,j)+16*Vnew(i,j0)+16*Vnew(i,j1)-12*h^2*f - ...
+                Vnew(i2,j)-Vnew(i00,j)-Vnew(i,j2)-Vnew(i,j00))+ (1-W)*Vnew(i,j);
         end
     end
     diff = sqrt(sum(sum((Vnew - Vold).^2))) / sqrt(sum(sum(Vnew.^2)));
