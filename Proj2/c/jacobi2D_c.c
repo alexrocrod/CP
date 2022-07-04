@@ -22,18 +22,6 @@
 // parâmetro  de  ponderação  𝑤 =15/16.  Repare  que,  agora,  cada  processo  tem  de  receber  duas 
 // linhas  e  duas  colunas  dos  seus  processos  vizinhos.  Faça  a  representação  gráfica  do  resultado  e 
 // compare-a com a solução obtida na alínea anterior. 
- 
-// Caso não tenha conseguido completar a alínea b), use as condições fronteira da alínea a) e um 
-// estêncil de 9 pontos mais compacto, que, em vez dos 4 pontos a distância 2ℎ, usa os 4 pontos à 
-// distância √2ℎ na diagonal. A este estêncil corresponde a seguinte equação iterativa: 
-// 𝑉𝑖,𝑗(𝑘) = 1
-// 20[4𝑉𝑖−1,𝑗(𝑘−1) +4𝑉𝑖+1,𝑗(𝑘−1) +4𝑉𝑖,𝑗−1(𝑘−1) +4𝑉𝑖,𝑗+1(𝑘−1) +𝑉𝑖−1,𝑗−1(𝑘−1) +
-// 𝑉𝑖+1,𝑗−1(𝑘−1) +𝑉𝑖−1,𝑗+1(𝑘−1) +𝑉𝑖+1,𝑗+1(𝑘−1)]−ℎ2
-// 40[𝑓𝑖−1,𝑗 +𝑓𝑖+1,𝑗 +8𝑓𝑖,𝑗 +𝑓𝑖,𝑗−1 +𝑓𝑖,𝑗+1]. 
-// Repare que, para usar este estêncil compacto, cada processo terá de comunicar com 8 processos 
-// no total. Ou seja, para atualizar os pontos que se encontram nos cantos dos subdomínio também 
-// tem de comunicar com os 4 processos vizinhos nas diagonais.
-
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -46,6 +34,8 @@
 #define TOL 1e-6
 #define MAXIT 5e5
 #define L 1.0
+
+#define W (15.0/16.0)
 
 double f(double x, double y)
 {
@@ -180,15 +170,12 @@ int main(int argc, char *argv[])
 
     double h = ((double)2 * L) / ((double) nx);
 
-    double W = 15.0/16.0;
-
     // for (int j = 1; j < mycols + 1 ; j++)
     // {
     //     for (int i = 1; i < myrows + 1; i++)
     //     {
     //         myf[i][j] = f(-L + (firstcol + j - 1) * h, -L + (firstrow + i - 1) * h);
-    //     }
-        
+    //     }       
     // }
     for (int j = 2; j < mycols + 2 ; j++)
     {

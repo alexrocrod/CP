@@ -249,10 +249,10 @@ int main(int argc, char *argv[])
         }
 
         // Comunicar aos vizinhos
-        MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrtop, 0, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
-        MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrbottom, 1, &Vnew[0][1], mycols, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
-        MPI_Sendrecv(&Vnew[1][1], 1, column, nbrleft, 2, &Vnew[1][mycols+1], 1, column, nbrright, 2, comm2D, MPI_STATUS_IGNORE);
-        MPI_Sendrecv(&Vnew[1][mycols], 1, column, nbrright, 3, &Vnew[1][0], 1, column, nbrleft, 3, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrtop, 4, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrbottom, 4, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrbottom, 5, &Vnew[0][1], mycols, MPI_DOUBLE, nbrtop, 5, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[1][1], 1, column, nbrleft, 6, &Vnew[1][mycols+1], 1, column, nbrright, 6, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[1][mycols], 1, column, nbrright, 7, &Vnew[1][0], 1, column, nbrleft, 7, comm2D, MPI_STATUS_IGNORE);
 
        
         // Calcular ímpares
@@ -265,13 +265,15 @@ int main(int argc, char *argv[])
         }
 
         // Comunicar aos vizinhos 
-        MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrtop, 0, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
-        MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrbottom, 1, &Vnew[0][1], mycols, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
-        MPI_Sendrecv(&Vnew[1][1], 1, column, nbrleft, 2, &Vnew[1][mycols+1], 1, column, nbrright, 2, comm2D, MPI_STATUS_IGNORE);
-        MPI_Sendrecv(&Vnew[1][mycols], 1, column, nbrright, 3, &Vnew[1][0], 1, column, nbrleft, 3, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrtop, 8, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrbottom, 8, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrbottom, 9, &Vnew[0][1], mycols, MPI_DOUBLE, nbrtop, 9, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[1][1], 1, column, nbrleft, 10, &Vnew[1][mycols+1], 1, column, nbrright, 10, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[1][mycols], 1, column, nbrright, 11, &Vnew[1][0], 1, column, nbrleft, 11, comm2D, MPI_STATUS_IGNORE);
 
 
         MPI_Allreduce(sums, global_sums, 2, MPI_DOUBLE, MPI_SUM, comm2D);
+
+        printf("(%d) iter %d  err = %e \n", newid, iter, global_sums[0]/global_sums[1]);
         
         if (sqrt(global_sums[0]/global_sums[1]) < TOL)
         {

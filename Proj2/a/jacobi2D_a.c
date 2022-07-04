@@ -8,17 +8,17 @@
 // TODO:
 // incorporar as seguintes condições fronteira: 𝑉(−1,𝑦)=(1+𝑦)/4, 𝑉(𝑥,−1)=(1+𝑥)/4, 𝑉(𝑥,1)=(3+𝑥)/4 e 𝑉(1,𝑦)=(3+𝑦)/4. 
 
+#include <mpi.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <mpi.h>
 #include <math.h>
 
-#define min(a,b) (((a)<(b))?(a):(b))
+// #define min(a,b) (((a)<(b))?(a):(b))
 
+#define MAXIT 500000
 #define NXMAX 500
+#define L 1.0
 #define TOL 1e-6
-#define MAXIT 5e5
-#define L 1
 
 double f(double x, double y)
 {
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
         // scanf(" %d", &nx);
         nx = 100; // standard
     }
-    MPI_Bcast(&nx, 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Bcast(&nx, 1, MPI_INT, manager_rank, MPI_COMM_WORLD);
     ny = nx;
 
     if (nx == manager_rank)
@@ -96,27 +96,51 @@ int main(int argc, char *argv[])
         int listmycols[nprocs];
 
         int nrows = (int)((double)(ny-2)/(double)nprocs_col + 0.5);
-        
-        // Linhas
-        for (int i = 0; i < nprocs_col; i++)
-        {
-            listfirstrow[2*i] = 1 + i *  nrows;
-            listmyrows[2*i] = nrows;
-            listfirstrow[2*i+1] = 1 + i *  nrows;
-            listmyrows[2*i+1] = nrows;
-        }
-        // altera o numero de linhas do penultimo e do ultimo
-        listmyrows[nprocs-2] = ny - 2 - (nprocs_col - 1) * nrows;
-        listmyrows[nprocs-1] = ny - 2 - (nprocs_col - 1) * nrows;
 
-        // Colunas
-        int ncols_temp = (int)((nx-2)/2);
-        for (int i = 0; i < nprocs_col; i++)
-        {
-            listfirstcol[2*i] = 1;
-            listmycols[2*i] = ncols_temp;
-            listfirstcol[2*i+1] = ncols_temp + 1;
-            listmycols[2*i+1] = nx - 2 - ncols_temp;
+        printf("nprocs=%d, nrows=%d\n", nprocs, nrows);   
+
+        
+        // // Linhas
+        // for (int i = 0; i < nprocs_col; i++)
+        // {
+        //     listfirstrow[2*i] = 1 + i *  nrows;
+        //     listmyrows[2*i] = nrows;
+        //     listfirstrow[2*i+1] = 1 + i *  nrows;
+        //     listmyrows[2*i+1] = nrows;
+        // }
+        // // altera o numero de linhas do penultimo e do ultimo
+        // listmyrows[nprocs-2] = ny - 2 - (nprocs_col - 1) * nrows;
+        // listmyrows[nprocs-1] = ny - 2 - (nprocs_col - 1) * nrows;
+
+        // // Colunas
+        // int ncols_temp = (int)((nx-2)/2);
+        // for (int i = 0; i < nprocs_col; i++)
+        // {
+        //     listfirstcol[2*i] = 1;
+        //     listmycols[2*i] = ncols_temp;
+        //     listfirstcol[2*i+1] = ncols_temp + 1;
+        //     listmycols[2*i+1] = nx - 2 - ncols_temp;
+        // }
+        int remaining = nx-1;
+        for (int i=0; i<nprocs-2; i+=2) {
+            listmyrows[i] = nrows;
+            listmyrows[i+1] = nrows;
+            listfirstrow[i] = nx - remaining;
+            listfirstrow[i+1] = nx - remaining;
+            remaining += -nrows;
+            
+        }
+        listmyrows[nprocs-2] = remaining-1;
+        listmyrows[nprocs-1] = remaining-1;
+        listfirstrow[nprocs-2] = nx - remaining;
+        listfirstrow[nprocs-1] = nx - remaining;
+        
+        // int listleftcols[numprocs], listnumcols[numprocs];
+        for (int i=0; i<nprocs; i+=2) {
+            listfirstcol[i] = 1;
+            listmycols[i] = (ny-2)/2;
+            listfirstcol[i+1] = (ny-2)/2 + 1;
+            listmycols[i+1] = ny-2 - listmycols[i];
         }
 
         MPI_Scatter(listfirstrow, 1, MPI_INT, &firstrow, 1, MPI_INT, newid, comm2D);
@@ -145,36 +169,23 @@ int main(int argc, char *argv[])
     myf = calloc(myrows + 2, sizeof(*myf));
 
     double h = ((double)2 * L) / ((double) nx - 1);
+    // printf("h: %f\n", h);
+
 
     for (int j = 1; j < mycols + 1 ; j++)
     {
         for (int i = 1; i < myrows + 1; i++)
         {
+            // myf[i][j] = f(-L + (firstcol + j - 1) * h, L - (firstrow + i - 1) * h); // C
             myf[i][j] = f(-L + (firstcol + j - 1) * h, -L + (firstrow + i - 1) * h);
         }
         
     }
 
-    // DONE-TODO: Alterar nestes 4 fors para condicoes fronteira
-    if (newid == manager_rank || newid == 1){ // y = -L,  V(x,-1)
-        for (int j = 0; j < mycols+2; j++)
-        {
-            Vnew[0][j] = (1 + (-L + h*(firstcol+j-1)))/4;
-            Vold[0][j] = Vnew[0][j];
-        }
-    }
-
-    if (newid == nprocs - 1 || newid == nprocs - 1){ // y = L,  V(x,1)
-        for (int j = 0; j < mycols + 2; j++)
-        {
-            Vnew[myrows+1][j] = (3 + (-L + h*(firstcol+j-1)))/4;
-            Vold[myrows+1][j] = Vnew[myrows+1][j];
-        }
-    }
-
     if (newid % 2 == 0)
     {
-        for (int i = 1; i < myrows + 1; i++) // x = -L,  V(-1,y)
+        // for (int i = 1; i < myrows + 1; i++) // x = -L,  V(-1,y)
+        for (int i = 0; i < myrows + 2; i++) // x = -L,  V(-1,y)
         {
             Vnew[i][0] = (1 + (L - h*(firstrow+i-1)) )/4;
             Vold[i][0] = Vnew[i][0] ;
@@ -182,12 +193,34 @@ int main(int argc, char *argv[])
     }
     else
     {
-       for (int i = 1; i < myrows + 1; i++) // x = -L,  V(1,y)
+    //    for (int i = 1; i < myrows + 1; i++) // x = -L,  V(1,y)
+       for (int i = 0; i < myrows + 2; i++) // x = -L,  V(1,y)
         {
             Vnew[i][mycols+1] = (3 + (L - h*(firstrow+i-1)) )/4;
             Vold[i][mycols+1] = Vnew[i][mycols+1];
         } 
     }
+
+    // DONE-TODO: Alterar nestes 4 fors para condicoes fronteira
+    if (newid == manager_rank || newid == 1){ // y = -L,  V(x,-1)
+        for (int j = 0; j < mycols+2; j++)
+        {
+            // Vnew[0][j] = (1 + (-L + h*(firstcol+j-1)))/4;
+            Vnew[0][j] = (3 + (-L + h*(firstcol+j-1)))/4;
+            Vold[0][j] = Vnew[0][j];
+        }
+    }
+
+    if (newid == nprocs - 2 || newid == nprocs - 1){ // y = L,  V(x,1)
+        for (int j = 0; j < mycols + 2; j++)
+        {
+            // Vnew[myrows+1][j] = (3 + (-L + h*(firstcol+j-1)))/4;
+            Vnew[myrows+1][j] = (1 + (-L + h*(firstcol+j-1)))/4;
+            Vold[myrows+1][j] = Vnew[myrows+1][j];
+        }
+    }
+
+    
 
     MPI_Datatype column;
     MPI_Type_vector(myrows + 2, 1, mycols + 2 , MPI_DOUBLE, &column);
@@ -222,9 +255,9 @@ int main(int argc, char *argv[])
                 tm1 = MPI_Wtime();
             }
 
-            int gsizes[2] = {ny, nx};
-            int lsizes[2] = {myrows, mycols + 1};
-            int start_ind[2] = {firstrow, firstcol - 1 + (newid % 2)};
+            int gsizes[] = {ny, nx};
+            int lsizes[] = {myrows, mycols + 1};
+            int start_ind[] = {firstrow, firstcol - 1 + (newid % 2)};
 
             if (newid == 0 || newid == 1) {
                 lsizes[0]++;
@@ -240,7 +273,7 @@ int main(int argc, char *argv[])
             MPI_Type_commit(&filetype);
           
             // Criar novo datatype para enviar apenas pontos locais pelos quais é responsável (não queremos enviar pontos fantasma)
-            int memsizes[2] = {myrows+2, mycols+2};
+            int memsizes[] = {myrows+2, mycols+2};
             start_ind[0] = 1;
             start_ind[1] = newid % 2;
             if (newid == 0 || newid == 1) {
@@ -279,10 +312,13 @@ int main(int argc, char *argv[])
         MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[0] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
 
         // comunicações sentido para direita
-        MPI_Sendrecv(&(Vnew[0][mycols]), 1, column, nbrright, 2, &(Vnew[0][0]), 1, column, nbrleft, 2, comm2D, MPI_STATUS_IGNORE);
+        // MPI_Sendrecv(&(Vnew[0][mycols]), 1, column, nbrright, 2, &(Vnew[0][0]), 1, column, nbrleft, 2, comm2D, MPI_STATUS_IGNORE);
 
         // comunicações sentido para esquerda
-        MPI_Sendrecv(&(Vnew[0][1]), 1, column, nbrleft, 3, &(Vnew[0][mycols+1]), 1, column, nbrright, 3, comm2D, MPI_STATUS_IGNORE);
+        // MPI_Sendrecv(&(Vnew[0][1]), 1, column, nbrleft, 3, &(Vnew[0][mycols+1]), 1, column, nbrright, 3, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&(Vnew[0][1]), 1, column, nbrleft, 2, &(Vnew[0][mycols+1]), 1, column, nbrright, 2, comm2D, MPI_STATUS_IGNORE);
+        
+        MPI_Sendrecv(&(Vnew[0][mycols]), 1, column, nbrright, 3, &(Vnew[0][0]), 1, column, nbrleft, 3, comm2D, MPI_STATUS_IGNORE);
         
         for (int i = 0; i < myrows + 2; i++)
         {
