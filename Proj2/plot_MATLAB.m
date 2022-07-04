@@ -5,10 +5,10 @@ close all
 nx=100;
 ny=nx;
 
-% alinea = 'a';
+alinea = 'a';
 % alinea = 'b';
 % alinea = 'c';
-alinea = 'd';
+% alinea = 'a';
 
 C = false;
 % C = true;
@@ -16,7 +16,7 @@ C = false;
 f = [alinea '/results_' alinea '.bin'];
 
 if (C)
-    f = ['d/results_' alinea '_C.bin'];
+    f = [alinea '/results_' alinea '_C.bin'];
 end
 
 fileID = fopen(f);
