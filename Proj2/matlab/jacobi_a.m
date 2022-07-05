@@ -32,10 +32,15 @@ for k = 1:maxit
     Vnew = Vold;
     for i = 2:N-1
         for j = 2:N-1
-            f = 7*sin(2*pi*x(i))*cos(3*pi*x(i))*sin(2*pi*y(j))*cos(3*pi*y(j));         
-            Vnew(i,j)= 0.25*(Vnew(i+1,j)+Vnew(i-1,j)+Vnew(i,j+1)+Vnew(i,j-1)-h^2*f);
+
+            f = 7*sin(2*pi*x(i))*cos(3*pi*x(i))*sin(2*pi*y(j))*cos(3*pi*y(j));  
+
+            Vnew(i,j)= 0.25*(Vold(i+1,j)+Vold(i-1,j)+Vold(i,j+1)+Vold(i,j-1)-h^2*f);
+
+%             Vnew(i,j)= 0.25*(Vnew(i1,j)+Vnew(i0,j)+Vnew(i,j1)+Vnew(i,j0)-h^2*f);
         end
     end
+    
     diff = sqrt(sum(sum((Vnew - Vold).^2))) / sqrt(sum(sum(Vnew.^2)));
     if diff < tolerancia
         break;

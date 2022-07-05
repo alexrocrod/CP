@@ -23,33 +23,17 @@ Vold=zeros(N,N);
 
 %% 
 
-Vnew = Vold;
 for k = 1:maxit
     Vnew = Vold;
     for i = 1:N
         for j = 1:N
             f = 7*sin(2*pi*x(i))*cos(3*pi*x(i))*sin(2*pi*y(j))*cos(3*pi*y(j));
 
-            i1= i+1;
-            i0 = i-1;
-            j1= j+1;
-            j0 = j-1;
+            [i0,i1,j0,j1] = getIJ(i,j,N);
 
-            if (j0 == 0)
-                j0 = N;
-            end
-            if (j1 > N)
-                j1 = 1;
-            end
+             Vnew(i,j)= 0.25*(Vold(i0,j)+Vold(i1,j)+Vold(i,j0)+Vold(i,j1)-h^2*f);
 
-            if (i0 == 0)
-                i0 = N;
-            end
-            if (i1 > N)
-                i1 = 1;
-            end
-
-            Vnew(i,j)= 0.25*(Vnew(i1,j)+Vnew(i0,j)+Vnew(i,j1)+Vnew(i,j0)-h^2*f);
+%             Vnew(i,j)= 0.25*(Vnew(i1,j)+Vnew(i0,j)+Vnew(i,j1)+Vnew(i,j0)-h^2*f);
         end
     end
     diff = sqrt(sum(sum((Vnew - Vold).^2))) / sqrt(sum(sum(Vnew.^2)));
@@ -69,3 +53,32 @@ ylabel('\it{y}')
 title('array\_MATLAB')
 
 saveas(gcf,"jac_b.jpg")
+
+%%
+% clc
+% i=100;
+% j=1;
+% [i0,i1,j0,j1] = getIJ(i,j,N);
+% [i0,i,i1]
+% [j0,j,j1]
+
+%%
+function [i0,i1,j0,j1] = getIJ(i,j,N)
+    j1= j + 1;
+    j0 = j - 1;
+
+    if (j0 <= 0)
+        j0 = j0+N;
+    elseif (j1 > N)
+        j1 = j1-N;
+    end
+
+    i1= i + 1;
+    i0 = i - 1;
+
+    if (i0 <= 0)
+        i0 = i0+N;
+    elseif (i1 > N)
+        i1 = i1-N;
+    end
+end

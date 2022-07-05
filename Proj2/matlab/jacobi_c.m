@@ -22,7 +22,6 @@ W = 15/16;
 
 %% 
 tic
-Vnew = Vold;
 for k = 1:maxit
     Vnew = Vold;
     for i = 1:N
@@ -31,8 +30,11 @@ for k = 1:maxit
 
             [i00,i0,i1,i2,j00,j0,j1,j2] = getIJ(i,j,N);
 
-            Vnew(i,j)= W/60*(16*Vnew(i0,j)+16*Vnew(i1,j)+16*Vnew(i,j0)+16*Vnew(i,j1)-12*h.^2*f - ...
-                Vnew(i2,j)-Vnew(i00,j)-Vnew(i,j2)-Vnew(i,j00))+ (1-W)*Vnew(i,j);
+            Vnew(i,j)= W/60*(16*Vold(i0,j)+16*Vold(i1,j)+16*Vold(i,j0)+16*Vold(i,j1)-12*h.^2*f - ...
+                Vold(i2,j)-Vold(i00,j)-Vold(i,j2)-Vold(i,j00))+ (1-W)*Vold(i,j);
+
+%             Vnew(i,j)= W/60*(16*Vnew(i0,j)+16*Vnew(i1,j)+16*Vnew(i,j0)+16*Vnew(i,j1)-12*h.^2*f - ...
+%                 Vnew(i2,j)-Vnew(i00,j)-Vnew(i,j2)-Vnew(i,j00))+ (1-W)*Vnew(i,j);
         end
     end
     diff = sqrt(sum(sum((Vnew - Vold).^2))) / sqrt(sum(sum(Vnew.^2)));
