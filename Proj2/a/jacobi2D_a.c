@@ -233,7 +233,6 @@ int main(int argc, char *argv[])
         double sums[2] = {0.0,0.0};
         double global_sums[2];
 
-        // for (int j = 1; j < mycols -1 ; j++)
         for (int j = 1; j < mycols + 1 ; j++)
         {
             for (int i = 1; i < myrows + 1; i++)

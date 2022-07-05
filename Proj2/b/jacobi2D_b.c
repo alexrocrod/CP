@@ -109,17 +109,6 @@ int main(int argc, char *argv[])
         // Linhas
         for (int i = 0; i < nprocs_col; i++)
         {
-            // listfirstrow[2*i] = 1 + i *  nrows;
-            // listmyrows[2*i] = nrows;
-            // listfirstrow[2*i+1] = 1 + i *  nrows;
-            // listmyrows[2*i+1] = nrows;
-
-            // listfirstrow[2*i] = 1 + i *  nrows;
-            // listmyrows[2*i] = nrows + 1;
-            // listfirstrow[2*i+1] = 1 + i *  nrows;
-            // listmyrows[2*i+1] = nrows + 1;
-            
-            // listfirstrow[2*i] = 1 + i *  nrows;
             listfirstrow[2*i] = i *  (nrows+1);
             listmyrows[2*i] = nrows + 1;
             // listfirstrow[2*i+1] = 1 + i *  nrows;
@@ -127,9 +116,6 @@ int main(int argc, char *argv[])
             listmyrows[2*i+1] = nrows + 1;
         }
         // Altera o numero de linhas do penultimo e do ultimo
-        // listmyrows[nprocs-2] = ny - 2 - (nprocs_col - 1) * nrows;
-        // listmyrows[nprocs-1] = ny - 2 - (nprocs_col - 1) * nrows;
-
         // Agora inclui mais 1 linha
         listmyrows[nprocs-2] = ny - 1 - (nprocs_col - 1) * nrows;
         listmyrows[nprocs-1] = ny - 1 - (nprocs_col - 1) * nrows;
@@ -142,10 +128,6 @@ int main(int argc, char *argv[])
         int ncols_temp = (int)((nx-2)/2);
         for (int i = 0; i < nprocs_col; i++)
         {
-            // listfirstcol[2*i] = 1;
-            // listmycols[2*i] = ncols_temp;
-            // listfirstcol[2*i+1] = ncols_temp + 1;
-            // listmycols[2*i+1] = nx - 2 - ncols_temp;
             listfirstcol[2*i] = 0;
             listmycols[2*i] = ncols_temp + 1;
             listfirstcol[2*i+1] = ncols_temp + 1;
@@ -184,44 +166,11 @@ int main(int argc, char *argv[])
     {
         for (int i = 1; i < myrows + 1; i++)
         {
+            // myf[i][j] = f(-L + (firstcol + j - 1) * h, L - (firstrow + i - 1) * h); // C
             myf[i][j] = f(-L + (firstcol + j - 1) * h, -L + (firstrow + i - 1) * h);
         }
         
     }
-
-    // // TODO: Usar da a) 
-    // if (newid == manager_rank || newid == 1){
-    //     for (int j = 0; j < mycols+2; j++)
-    //     {
-    //         Vnew[0][j] = 0.;
-    //         Vold[0][j] = 0.;
-    //     }
-    // }
-
-    // if (newid == nprocs - 1 || newid == nprocs - 1){
-    //     for (int j = 0; j < mycols + 2; j++)
-    //     {
-    //         Vnew[myrows+1][j] = 0.;
-    //         Vold[myrows+1][j] = 0.;
-    //     }
-    // }
-
-    // if (newid % 2 == 0)
-    // {
-    //     for (int i = 1; i < myrows + 1; i++)
-    //     {
-    //         Vnew[i][0] = 0.;
-    //         Vold[i][0] = 0.;
-    //     }
-    // }
-    // else
-    // {
-    //    for (int i = 1; i < myrows + 1; i++)
-    //     {
-    //         Vnew[i][mycols+1] = 0.;
-    //         Vold[i][mycols+1] = 0.;
-    //     } 
-    // }
 
     MPI_Datatype column;
     MPI_Type_vector(myrows + 2, 1, mycols + 2 , MPI_DOUBLE, &column);
@@ -234,7 +183,6 @@ int main(int argc, char *argv[])
         double sums[2] = {0.0, 0.0};
         double global_sums[2];
 
-        // for (int j = 1; j < mycols -1 ; j++)
         for (int j = 1; j < mycols + 1 ; j++)
         {
             for (int i = 1; i < myrows + 1; i++)
@@ -257,19 +205,8 @@ int main(int argc, char *argv[])
             }
 
             int gsizes[2] = {ny, nx};
-            // int lsizes[2] = {myrows, mycols + 1};
-            // int start_ind[2] = {firstrow, firstcol - 1 + (newid % 2)};
             int lsizes[2] = {myrows, mycols};
             int start_ind[2] = {firstrow, firstcol};
-
-            // if (newid == 0 || newid == 1) {
-            //     lsizes[0]++;
-            //     start_ind[0]--;
-            // }
-
-            // if (newid == nprocs-2 || newid == nprocs-1) {
-            //     lsizes[0]++;
-            // }
 
             MPI_Datatype filetype;
             MPI_Type_create_subarray(2, gsizes, lsizes, start_ind, MPI_ORDER_C, MPI_DOUBLE, &filetype);
