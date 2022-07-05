@@ -5,8 +5,8 @@ close all
 nx=100;
 ny=nx;
 
-alinea = 'a';
-% alinea = 'b';
+% alinea = 'a';
+alinea = 'b';
 % alinea = 'c';
 % alinea = 'a';
 
