@@ -5,10 +5,10 @@ close all
 nx=100;
 ny=nx;
 
-% alinea = 'a';
-alinea = 'b';
+alinea = 'a';
+% alinea = 'b';
 % alinea = 'c';
-% alinea = 'a';
+% alinea = 'd';
 
 C = false;
 % C = true;
