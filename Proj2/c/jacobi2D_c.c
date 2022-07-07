@@ -120,15 +120,18 @@ int main(int argc, char *argv[])
         // Linhas
         for (int i = 0; i < nprocs_col; i++)
         {
-            listfirstrow[2*i] = i *  (nrows+1);
-            listmyrows[2*i] = nrows + 1;
-            listfirstrow[2*i+1] = i *  (nrows+1);
-            listmyrows[2*i+1] = nrows + 1;
+            listfirstrow[2*i] = i *  (nrows);
+            listmyrows[2*i] = nrows+1;
+            listfirstrow[2*i+1] = i *  (nrows);
+            listmyrows[2*i+1] = nrows+1;
         }
         // Altera o numero de linhas do penultimo e do ultimo
         // Agora inclui mais 1 linha
-        listmyrows[nprocs-2] = ny - 1 - (nprocs_col - 1) * nrows;
-        listmyrows[nprocs-1] = ny - 1 - (nprocs_col - 1) * nrows;
+        // listmyrows[nprocs-2] = ny - 1 - (nprocs_col - 1) * nrows;
+        // listmyrows[nprocs-1] = ny - 1 - (nprocs_col - 1) * nrows;
+
+        listmyrows[nprocs-2] = ny - (nprocs_col - 1) * nrows;
+        listmyrows[nprocs-1] = ny - (nprocs_col - 1) * nrows;
         
 
         // Colunas
@@ -214,6 +217,11 @@ int main(int argc, char *argv[])
             int gsizes[2] = {ny, nx};
             int lsizes[2] = {myrows, mycols};
             int start_ind[2] = {firstrow, firstcol};
+
+            if (newid == nprocs-2 || newid == nprocs-1) {
+                // lsizes[0]++;
+                printf("nproc %d, gsz0 %d,gsz1 %d, lsz0 %d, lsz1 %d, si0 %d, si1 %d\n",newid,gsizes[0],gsizes[1],lsizes[0],lsizes[1],start_ind[0],start_ind[1]);
+            }
 
             MPI_Datatype filetype;
             MPI_Type_create_subarray(2, gsizes, lsizes, start_ind, MPI_ORDER_C, MPI_DOUBLE, &filetype);

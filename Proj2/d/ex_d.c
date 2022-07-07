@@ -186,7 +186,7 @@ int main(int argc, char *argv[]){
         double sums_global[2];
         MPI_Allreduce(&sums, &sums_global, 2, MPI_DOUBLE, MPI_SUM, comm2d);
         
-        printf("(%d) iter %d  err = %e \n", newid, Jaciter, sums_global[0]/sums_global[1]);
+        // printf("(%d) iter %d  err = %e \n", newid, Jaciter, sums_global[0]/sums_global[1]);
         
         if (sqrt(sums_global[0]/sums_global[1]) < TOL) {
 
@@ -201,6 +201,11 @@ int main(int argc, char *argv[]){
             int globalsize[] = {nx, ny};
             int localsize[] = {myrows, mycols};
             int start_inds[] = {mytoprow, myleftcol};
+
+            if (newid == numprocs-2 || newid == numprocs-1) {
+                // lsizes[0]++;
+                printf("nproc %d, gsz0 %d,gsz1 %d, lsz0 %d, lsz1 %d, si0 %d, si1 %d\n",newid,globalsize[0],globalsize[1],localsize[0],localsize[1],start_inds[0],start_inds[1]);
+            }
     
             
             //printf("myid %d localsize[0] %d localsize[1] %d start_inds[0] %d start_inds[1] %d \n",myid,localsize[0],localsize[1],start_inds[0],start_inds[1]);
