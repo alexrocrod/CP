@@ -17,7 +17,7 @@ y = linspace(-L,L,ny);
 h = x(2)-x(1);
 
 N = nx;
-Vold=zeros(N,N);
+Vold = zeros(N,N);
 
 %% BC a)
 Vold(1,:) = (1 + x)./4;
@@ -28,7 +28,6 @@ Vold(:,end) = (3 + y)./4;
 %% 
 
 for k = 1:maxit
-
     Vnew = Vold;
     for i = 2:N-1
         for j = 2:N-1
@@ -58,3 +57,5 @@ ylabel('\it{y}')
 title('array\_MATLAB')
 
 saveas(gcf,"jac_a.jpg")
+
+save("..\a\vnewMat.mat","Vnew")

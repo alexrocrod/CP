@@ -50,6 +50,8 @@ title('array\_MATLAB')
 
 saveas(gcf,"jac_d.jpg")
 
+save("..\d\vnewMat.mat","Vnew")
+
 %%
 function [i00,i0,i1,i2,j00,j0,j1,j2] = getIJ(i,j,N)
     j1= j + 1;

@@ -54,6 +54,8 @@ title('array\_MATLAB')
 
 saveas(gcf,"jac_b.jpg")
 
+save("..\b\vnewMat.mat","Vnew")
+
 %%
 % clc
 % i=100;

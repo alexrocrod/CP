@@ -6,9 +6,9 @@ nx=100;
 ny=nx;
 
 % alinea = 'a';
-% alinea = 'b';
+alinea = 'b';
 % alinea = 'c';
-alinea = 'd';
+% alinea = 'd';
 
 C = false;
 % C = true;
@@ -32,37 +32,22 @@ x=linspace(-L,L,nx);
 y=linspace(-L,L,ny);
 
 figure
-mesh(x,y,array_MPI)
-xlim([-L L])
-ylim([-L L])
-xlabel('\it{x}')
-ylabel('\it{y}')
-title('array\_MPI')
-fprintf("erro: %d\n",getMSE(Vnew,array_MPI));
-
-figure
 mesh(x,y,array_MPI')
 xlim([-L L])
 ylim([-L L])
 xlabel('\it{x}')
 ylabel('\it{y}')
-title('array\_MPI trans')
-fprintf("erro trans: %d\n",getMSE(Vnew,array_MPI'));
+title('array\_MPI')
+figure
+
+array_MPI = rot90(array_MPI);
+
 
 i = [alinea,'/img', upper(alinea), '.jpg'];
 if (C)
     i = [alinea,'/img', upper(alinea), '_C.jpg'];
 end
 saveas(gcf,i)
-
-figure
-mesh(x,y,rot90(array_MPI))
-xlim([-L L])
-ylim([-L L])
-xlabel('\it{x}')
-ylabel('\it{y}')
-title('array\_MPI rot90')
-fprintf("erro rot90: %d\n",getMSE(Vnew,rot90(array_MPI)));
 
 %%
 
@@ -74,21 +59,14 @@ xlabel('\it{x}')
 ylabel('\it{y}')
 title('array\_Matlab')
 
-%%
+N2 = nx*ny;
 
-%%
+array_MPI = rot90(array_MPI);
 
-function MSE = getMSE(Vnew,array_MPI)
+matNorm = Vnew./max(Vnew,[],'all');
+MPINorm = array_MPI./max(array_MPI,[],'all');
 
-    N2 = 100*100;
-    
-    % array_MPI = rot90(array_MPI);
-    
-    matNorm = Vnew./max(Vnew,[],'all');
-    MPINorm = array_MPI./max(array_MPI,[],'all');
-    
-    MSE = 1/N2 * sum((MPINorm-matNorm).^2,'all');
-end
+MSE = 1/N2 * sum((MPINorm-matNorm).^2,'all')
 
 
 
