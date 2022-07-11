@@ -31,13 +31,13 @@ L=1;
 x=linspace(-L,L,nx);
 y=linspace(-L,L,ny);
 
-figure
-mesh(x,y,array_MPI)
-xlim([-L L])
-ylim([-L L])
-xlabel('\it{x}')
-ylabel('\it{y}')
-title('array\_MPI')
+% figure
+% mesh(x,y,array_MPI)
+% xlim([-L L])
+% ylim([-L L])
+% xlabel('\it{x}')
+% ylabel('\it{y}')
+% title('array\_MPI (no)')
 fprintf("erro: %d\n",getMSE(Vnew,array_MPI));
 
 figure
@@ -46,7 +46,7 @@ xlim([-L L])
 ylim([-L L])
 xlabel('\it{x}')
 ylabel('\it{y}')
-title('array\_MPI trans')
+title('array\_MPI')
 fprintf("erro trans: %d\n",getMSE(Vnew,array_MPI'));
 
 i = [alinea,'/img', upper(alinea), '.jpg'];
@@ -55,13 +55,13 @@ if (C)
 end
 saveas(gcf,i)
 
-figure
-mesh(x,y,rot90(array_MPI))
-xlim([-L L])
-ylim([-L L])
-xlabel('\it{x}')
-ylabel('\it{y}')
-title('array\_MPI rot90')
+% figure
+% mesh(x,y,rot90(array_MPI))
+% xlim([-L L])
+% ylim([-L L])
+% xlabel('\it{x}')
+% ylabel('\it{y}')
+% title('array\_MPI rot90')
 fprintf("erro rot90: %d\n",getMSE(Vnew,rot90(array_MPI)));
 
 %%
@@ -74,7 +74,6 @@ xlabel('\it{x}')
 ylabel('\it{y}')
 title('array\_Matlab')
 
-%%
 
 %%
 
