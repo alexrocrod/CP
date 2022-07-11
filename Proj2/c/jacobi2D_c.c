@@ -56,9 +56,8 @@ int main(int argc, char *argv[])
     
     if (myid == manager_rank)
     {
-        // printf("Introduza numero de pontos {max %d, 0 para sair}: \n",NXMAX);
-        // scanf(" %d", &nx);
-        nx = 100; // standard
+        printf("Introduza numero de pontos {max %d, 0 para sair}: \n",NXMAX);
+        scanf(" %d", &nx);
     }
 
     MPI_Bcast(&nx, 1, MPI_INT, manager_rank, MPI_COMM_WORLD);
@@ -70,7 +69,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (nx > NXMAX)
+    if (nx < 0 || nx > NXMAX)
     {
         MPI_Finalize();
         return 1;
@@ -126,7 +125,6 @@ int main(int argc, char *argv[])
             listmyrows[2*i+1] = nrows+1;
         }
         // Altera o numero de linhas do penultimo e do ultimo
-        // Agora inclui mais 1 linha
         listmyrows[nprocs-2] = ny - (nprocs_col - 1) * nrows;
         listmyrows[nprocs-1] = ny - (nprocs_col - 1) * nrows;
         
@@ -160,7 +158,7 @@ int main(int argc, char *argv[])
     MPI_Barrier(comm2D);
     printf("newid=%d, firstrow=%d, lastrow=%d, firstcol=%d, lastcol=%d\n", newid, firstrow, firstrow+myrows-1, firstcol, firstcol+mycols-1);
 
-    // Agora com +4
+    // ALterado para usar mais 2 colunas e linhas fantasma, necesário para o maior stencil
     double (*Vold)[mycols+4], (*Vnew)[mycols+4], (*myf)[mycols+4];
     Vold = calloc(myrows + 4, sizeof(*Vold));
     Vnew = calloc(myrows + 4, sizeof(*Vnew));
@@ -168,6 +166,7 @@ int main(int argc, char *argv[])
 
     double h = ((double)2 * L) / ((double) nx);
 
+    // dominio principal agora nao inclui as 2 primeiras e 2 ultimas linhas e colunas
     for (int j = 2; j < mycols + 2 ; j++)
     {
         for (int i = 2; i < myrows + 2; i++)
@@ -177,7 +176,7 @@ int main(int argc, char *argv[])
         
     }
 
-
+    // Alterado para + 4
     MPI_Datatype column;
     MPI_Type_vector(myrows + 4, 1, mycols + 4, MPI_DOUBLE, &column);
     MPI_Type_commit(&column);
@@ -189,6 +188,7 @@ int main(int argc, char *argv[])
         double sums[2] = {0.0, 0.0};
         double global_sums[2];
 
+        // dominio principal agora nao inclui as 2 primeiras e 2 ultimas linhas e colunas
         for (int j = 2; j < mycols + 2 ; j++)
         {
             for (int i = 2; i < myrows + 2; i++)
@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
             MPI_Type_create_subarray(2, gsizes, lsizes, start_ind, MPI_ORDER_C, MPI_DOUBLE, &filetype);
             MPI_Type_commit(&filetype);
           
-            // Criar novo datatype para enviar apenas pontos locais pelos quais é responsável (não queremos enviar pontos fantasma)
+            // Alterado para + 4
             int memsizes[2] = {myrows+4, mycols+4};
             start_ind[0] = 1;
             start_ind[1] = newid % 2;
@@ -251,31 +251,35 @@ int main(int argc, char *argv[])
         }
 
         // comunicações sentido ascendente
-        MPI_Sendrecv(Vnew[2], mycols+4, MPI_DOUBLE, nbrbottom, 0, Vnew[myrows+2] , mycols+4, MPI_DOUBLE, nbrtop, 0, comm2D, MPI_STATUS_IGNORE);
-        // MPI_Sendrecv(Vnew[2], mycols+4, MPI_DOUBLE, nbrtop, 0, Vnew[myrows+2] , mycols+4, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
+        // Alterado para +4
+        MPI_Sendrecv(Vnew[myrows], mycols+4, MPI_DOUBLE, nbrtop, 0, Vnew[0] , mycols+4, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
         
         // comunicações sentido descendente
-        MPI_Sendrecv(Vnew[myrows], mycols+4, MPI_DOUBLE, nbrtop, 1, Vnew[0] , mycols+4, MPI_DOUBLE, nbrbottom, 1, comm2D, MPI_STATUS_IGNORE);
-        // MPI_Sendrecv(Vnew[myrows], mycols+4, MPI_DOUBLE, nbrbottom, 1, Vnew[0] , mycols+4, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
+        // Alterado para usar 3a e antepenultima coluna (e +4)
+        MPI_Sendrecv(Vnew[2], mycols+4, MPI_DOUBLE, nbrbottom, 1, Vnew[myrows+2] , mycols+4, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
         
         // comunicações sentido para direita
         MPI_Sendrecv(&(Vnew[0][mycols]), 1, column, nbrright, 2, &(Vnew[0][0]), 1, column, nbrleft, 2, comm2D, MPI_STATUS_IGNORE);
 
         // comunicações sentido para esquerda
+         // Alterado para usar 3a e antepenultima coluna
         MPI_Sendrecv(&(Vnew[0][2]), 1, column, nbrleft, 3, &(Vnew[0][mycols+2]), 1, column, nbrright, 3, comm2D, MPI_STATUS_IGNORE);
         
 
-        // Outras comms.....
-        MPI_Sendrecv(Vnew[3], mycols+4, MPI_DOUBLE, nbrbottom, 5, Vnew[myrows+3], mycols+4, MPI_DOUBLE, nbrtop, 5, comm2D, MPI_STATUS_IGNORE);
-        // MPI_Sendrecv(Vnew[3], mycols+4, MPI_DOUBLE, nbrtop, 5, Vnew[myrows+3], mycols+4, MPI_DOUBLE, nbrbottom, 5, comm2D, MPI_STATUS_IGNORE);
-
+        // Outras comunicações
+        // Comunicar 2a e penultima linhas
         MPI_Sendrecv(Vnew[myrows+1], mycols+4, MPI_DOUBLE, nbrtop, 6, Vnew[1], mycols+4, MPI_DOUBLE, nbrbottom, 6, comm2D, MPI_STATUS_IGNORE);
-        // MPI_Sendrecv(Vnew[myrows+1], mycols+4, MPI_DOUBLE, nbrbottom, 6, Vnew[1], mycols+4, MPI_DOUBLE, nbrtop, 6, comm2D, MPI_STATUS_IGNORE);
+
+        // Comunicar 4a linha 
+        MPI_Sendrecv(Vnew[3], mycols+4, MPI_DOUBLE, nbrbottom, 5, Vnew[myrows+3], mycols+4, MPI_DOUBLE, nbrtop, 5, comm2D, MPI_STATUS_IGNORE);
         
+        // Comunicar 4a coluna 
         MPI_Sendrecv(&(Vnew[0][3]), 1, column, nbrleft, 7, &(Vnew[0][mycols+3]), 1, column, nbrright, 7, comm2D, MPI_STATUS_IGNORE);
         
+        // Comunicar 2a e penultima colunas
         MPI_Sendrecv(&(Vnew[0][mycols+1]), 1, column, nbrright, 8, &(Vnew[0][1]), 1, column, nbrleft, 8, comm2D, MPI_STATUS_IGNORE);
 
+        // Alterado para +4
         for (int i = 0; i < myrows + 4; i++)
         {
             for (int j = 0; j < mycols + 4; j++)
