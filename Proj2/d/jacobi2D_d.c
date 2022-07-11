@@ -147,10 +147,6 @@ int main(int argc, char *argv[])
         // Linhas
         for (int i = 0; i < nprocs_col; i++)
         {
-            // listfirstrow[2*i] = i *  (nrows+1);
-            // listmyrows[2*i] = nrows + 1;
-            // listfirstrow[2*i+1] = i *  (nrows+1);
-            // listmyrows[2*i+1] = nrows + 1;
             listfirstrow[2*i] = i *  (nrows);
             listmyrows[2*i] = nrows+1;
             listfirstrow[2*i+1] = i *  (nrows);
@@ -158,15 +154,8 @@ int main(int argc, char *argv[])
         }
         // Altera o numero de linhas do penultimo e do ultimo
         // Agora inclui mais 1 linha
-        // listmyrows[nprocs-2] = ny - 1 - (nprocs_col - 1) * nrows;
-        // listmyrows[nprocs-1] = ny - 1 - (nprocs_col - 1) * nrows;
-
         listmyrows[nprocs-2] = ny - (nprocs_col - 1) * nrows;
         listmyrows[nprocs-1] = ny - (nprocs_col - 1) * nrows;
-        
-        // Carlota usa myrows: rem-1
-        // rem = ny - nrows*(nprocs_col-1) 
-        // rem-1= ny - nrows*(nprocs_col-1) -1
 
         // Colunas
         int ncols_temp = (int)((nx-2)/2);
@@ -225,14 +214,17 @@ int main(int argc, char *argv[])
         double sums[2] = {0.0, 0.0};
         double global_sums[2];
 
-        // TODO: Usar como pontos pares os q i+j é par, i e j da Vold global
+        // Calculos pares 
         for (int i = 1; i < myrows + 1; i++)
         {
-            for (int j = 1; j < mycols + 1 ; j+=2)
+            for (int j = 1; j < mycols + 1 ; j++)
             {
-                Vnew[i][j] = (Vnew[i+1][j] + Vnew[i-1][j] + Vnew[i][j+1] + Vnew[i][j-1]  + h * h  * myf[i][j]) / 4.0;
-                sums[0] += (Vnew[i][j] - Vold[i][j]) * (Vnew[i][j] - Vold[i][j]);
-                sums[1] += Vnew[i][j] * Vnew[i][j];
+                if (((firstcol + j - 1)  + (firstrow + i - 1)) %2 == 0)
+                {
+                    Vnew[i][j] = (Vnew[i+1][j] + Vnew[i-1][j] + Vnew[i][j+1] + Vnew[i][j-1]  - h * h  * myf[i][j]) / 4.0;
+                    sums[0] += (Vnew[i][j] - Vold[i][j]) * (Vnew[i][j] - Vold[i][j]);
+                    sums[1] += Vnew[i][j] * Vnew[i][j];
+                }
             }  
         }
 
@@ -246,11 +238,16 @@ int main(int argc, char *argv[])
 
        
         // Calcular ímpares
-        for (int i=1; i<myrows+1; i++) {
-            for (int j=2; j<mycols+1; j+=2) {
+        for (int i = 1; i < myrows + 1; i++)
+        {
+            for (int j = 1; j < mycols + 1 ; j++)
+            {
+                if (((firstcol + j - 1)  + (firstrow + i - 1)) %2 == 1)
+                {
                     Vnew[i][j] = (Vnew[i-1][j] + Vnew[i][j-1] + Vnew[i][j+1] + Vnew[i+1][j] - h * h * myf[i][j]) / 4.0 ;
                     sums[0] += (Vnew[i][j]-Vold[i][j])*(Vnew[i][j]-Vold[i][j]);
                     sums[1] += Vnew[i][j]*Vnew[i][j];
+                }
             }
         }
 
@@ -264,8 +261,6 @@ int main(int argc, char *argv[])
 
 
         MPI_Allreduce(sums, global_sums, 2, MPI_DOUBLE, MPI_SUM, comm2D);
-
-        // printf("(%d) iter %d  err = %e \n", newid, iter, global_sums[0]/global_sums[1]);
         
         if (sqrt(global_sums[0]/global_sums[1]) < TOL)
         {
@@ -278,11 +273,6 @@ int main(int argc, char *argv[])
             int gsizes[2] = {ny, nx};
             int lsizes[2] = {myrows, mycols};
             int start_ind[2] = {firstrow, firstcol};
-
-            if (newid == nprocs-2 || newid == nprocs-1) {
-                // lsizes[0]++;
-                printf("nproc %d, gsz0 %d,gsz1 %d, lsz0 %d, lsz1 %d, si0 %d, si1 %d\n",newid,gsizes[0],gsizes[1],lsizes[0],lsizes[1],start_ind[0],start_ind[1]);
-            }
 
             MPI_Datatype filetype;
             MPI_Type_create_subarray(2, gsizes, lsizes, start_ind, MPI_ORDER_C, MPI_DOUBLE, &filetype);
@@ -325,12 +315,6 @@ int main(int argc, char *argv[])
         
         // comunicações sentido descendente
         MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
-        // MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[0] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
-
-        // // comunicações sentido ascendente
-        // MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
-        
-        // // comunicações sentido descendente
         // MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[0] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
         
         // comunicações sentido para direita

@@ -117,15 +117,9 @@ int main(int argc, char *argv[])
         }
         // Altera o numero de linhas do penultimo e do ultimo
         // Agora inclui mais 1 linha
-        // listmyrows[nprocs-2] = ny - 1 - (nprocs_col - 1) * nrows;
-        // listmyrows[nprocs-1] = ny - 1 - (nprocs_col - 1) * nrows;
-
         listmyrows[nprocs-2] = ny - (nprocs_col - 1) * nrows;
         listmyrows[nprocs-1] = ny - (nprocs_col - 1) * nrows;
         
-        // Carlota usa myrows: rem-1
-        // rem = ny - nrows*(nprocs_col-1) 
-        // rem-1= ny - nrows*(nprocs_col-1) -1
 
         // Colunas
         int ncols_temp = (int)((nx-2)/2);
@@ -162,14 +156,12 @@ int main(int argc, char *argv[])
     Vnew = calloc(myrows + 2, sizeof(*Vnew));
     myf = calloc(myrows + 2, sizeof(*myf));
 
-    // double h = ((double)2 * L) / ((double) nx - 1);
     double h = ((double)2 * L) / ((double) nx);
 
     for (int j = 1; j < mycols + 1 ; j++)
     {
         for (int i = 1; i < myrows + 1; i++)
         {
-            // myf[i][j] = f(-L + (firstcol + j - 1) * h, L - (firstrow + i - 1) * h); // C
             myf[i][j] = f(-L + (firstcol + j - 1) * h, -L + (firstrow + i - 1) * h);
         }
         
@@ -190,7 +182,7 @@ int main(int argc, char *argv[])
         {
             for (int i = 1; i < myrows + 1; i++)
             {
-                Vnew[i][j] = (Vold[i+1][j] + Vold[i-1][j] + Vold[i][j+1] + Vold[i][j-1]  + h * h  * myf[i][j]) / 4.0;
+                Vnew[i][j] = (Vold[i+1][j] + Vold[i-1][j] + Vold[i][j+1] + Vold[i][j-1]  - h * h  * myf[i][j]) / 4.0;
                 sums[0] += (Vnew[i][j] - Vold[i][j]) * (Vnew[i][j] - Vold[i][j]);
                 sums[1] += Vnew[i][j] * Vnew[i][j];
             }
@@ -210,11 +202,6 @@ int main(int argc, char *argv[])
             int gsizes[2] = {ny, nx};
             int lsizes[2] = {myrows, mycols};
             int start_ind[2] = {firstrow, firstcol};
-
-            if (newid == nprocs-2 || newid == nprocs-1) {
-                // lsizes[0]++;
-                printf("nproc %d, gsz0 %d,gsz1 %d, lsz0 %d, lsz1 %d, si0 %d, si1 %d\n",newid,gsizes[0],gsizes[1],lsizes[0],lsizes[1],start_ind[0],start_ind[1]);
-            }
 
             MPI_Datatype filetype;
             MPI_Type_create_subarray(2, gsizes, lsizes, start_ind, MPI_ORDER_C, MPI_DOUBLE, &filetype);

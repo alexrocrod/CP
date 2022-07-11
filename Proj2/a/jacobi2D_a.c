@@ -170,14 +170,11 @@ int main(int argc, char *argv[])
     myf = calloc(myrows + 2, sizeof(*myf));
 
     double h = ((double)2 * L) / ((double) nx - 1);
-    // printf("h: %f\n", h);
-
 
     for (int j = 1; j < mycols + 1 ; j++)
     {
         for (int i = 1; i < myrows + 1; i++)
         {
-            // myf[i][j] = f(-L + (firstcol + j - 1) * h, L - (firstrow + i - 1) * h); // C
             myf[i][j] = f(-L + (firstcol + j - 1) * h, -L + (firstrow + i - 1) * h);
         }
         
@@ -318,9 +315,6 @@ int main(int argc, char *argv[])
 
         // comunicações sentido para esquerda
         MPI_Sendrecv(&(Vnew[0][1]), 1, column, nbrleft, 3, &(Vnew[0][mycols+1]), 1, column, nbrright, 3, comm2D, MPI_STATUS_IGNORE);
-        // MPI_Sendrecv(&(Vnew[0][1]), 1, column, nbrleft, 2, &(Vnew[0][mycols+1]), 1, column, nbrright, 2, comm2D, MPI_STATUS_IGNORE);
-        
-        // MPI_Sendrecv(&(Vnew[0][mycols]), 1, column, nbrright, 3, &(Vnew[0][0]), 1, column, nbrleft, 3, comm2D, MPI_STATUS_IGNORE);
         
         for (int i = 0; i < myrows + 2; i++)
         {

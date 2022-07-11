@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
         {
             for (int i = 1; i < myrows + 1; i++)
             {
-                Vnew[i][j] = (Vold[i+1][j] + Vold[i-1][j] + Vold[i][j+1] + Vold[i][j-1]  + h * h  * myf[i][j]) / 4.0;
+                Vnew[i][j] = (Vold[i+1][j] + Vold[i-1][j] + Vold[i][j+1] + Vold[i][j-1]  - h * h  * myf[i][j]) / 4.0;
                 sums[0] += (Vnew[i][j] - Vold[i][j]) * (Vnew[i][j] - Vold[i][j]);
                 sums[1] += Vnew[i][j] * Vnew[i][j];
             }
