@@ -135,63 +135,90 @@ int main(int argc, char *argv[])
 
     if (newid == manager_rank)
     {   
-        int listfirstrow[nprocs];
-        int listmyrows[nprocs];
+        // int listfirstrow[nprocs];
+        // int listmyrows[nprocs];
 
-        int listfirstcol[nprocs];
-        int listmycols[nprocs];
+        // int listfirstcol[nprocs];
+        // int listmycols[nprocs];
 
-        int nrows = (int)((double)(ny-2)/(double)nprocs_col + 0.5);
+        // int nrows = (int)((double)(ny-2)/(double)nprocs_col + 0.5);
         
-        // Linhas
-        for (int i = 0; i < nprocs_col; i++)
-        {
-            // listfirstrow[2*i] = 1 + i *  nrows;
-            // listmyrows[2*i] = nrows;
-            // listfirstrow[2*i+1] = 1 + i *  nrows;
-            // listmyrows[2*i+1] = nrows;
+        // // Linhas
+        // for (int i = 0; i < nprocs_col; i++)
+        // {
+        //     // listfirstrow[2*i] = 1 + i *  nrows;
+        //     // listmyrows[2*i] = nrows;
+        //     // listfirstrow[2*i+1] = 1 + i *  nrows;
+        //     // listmyrows[2*i+1] = nrows;
 
-            // listfirstrow[2*i] = 1 + i *  nrows;
-            // listmyrows[2*i] = nrows + 1;
-            // listfirstrow[2*i+1] = 1 + i *  nrows;
-            // listmyrows[2*i+1] = nrows + 1;
+        //     // listfirstrow[2*i] = 1 + i *  nrows;
+        //     // listmyrows[2*i] = nrows + 1;
+        //     // listfirstrow[2*i+1] = 1 + i *  nrows;
+        //     // listmyrows[2*i+1] = nrows + 1;
             
-            // listfirstrow[2*i] = 1 + i *  nrows;
-            // listfirstrow[2*i] = i *  (nrows+1);
-            // listmyrows[2*i] = nrows + 1;
-            // // listfirstrow[2*i+1] = 1 + i *  nrows;
-            // listfirstrow[2*i+1] = i *  (nrows+1);
-            // listmyrows[2*i+1] = nrows + 1;
+        //     // listfirstrow[2*i] = 1 + i *  nrows;
+        //     // listfirstrow[2*i] = i *  (nrows+1);
+        //     // listmyrows[2*i] = nrows + 1;
+        //     // // listfirstrow[2*i+1] = 1 + i *  nrows;
+        //     // listfirstrow[2*i+1] = i *  (nrows+1);
+        //     // listmyrows[2*i+1] = nrows + 1;
 
-            listfirstrow[2*i] = i *  (nrows);
-            listmyrows[2*i] = nrows+1;
-            listfirstrow[2*i+1] = i *  (nrows);
-            listmyrows[2*i+1] = nrows+1;
-        }
-        // Altera o numero de linhas do penultimo e do ultimo
-        // listmyrows[nprocs-2] = ny - 2 - (nprocs_col - 1) * nrows;
-        // listmyrows[nprocs-1] = ny - 2 - (nprocs_col - 1) * nrows;
+        //     listfirstrow[2*i] = i *  (nrows);
+        //     listmyrows[2*i] = nrows+1;
+        //     listfirstrow[2*i+1] = i *  (nrows);
+        //     listmyrows[2*i+1] = nrows+1;
+        // }
+        // // Altera o numero de linhas do penultimo e do ultimo
+        // // listmyrows[nprocs-2] = ny - 2 - (nprocs_col - 1) * nrows;
+        // // listmyrows[nprocs-1] = ny - 2 - (nprocs_col - 1) * nrows;
 
-        // Agora inclui mais 1 linha
-        listmyrows[nprocs-2] = ny - (nprocs_col - 1) * nrows;
-        listmyrows[nprocs-1] = ny - (nprocs_col - 1) * nrows;
+        // // Agora inclui mais 1 linha
+        // listmyrows[nprocs-2] = ny - (nprocs_col - 1) * nrows;
+        // listmyrows[nprocs-1] = ny - (nprocs_col - 1) * nrows;
         
-        // Carlota usa myrows: rem-1
-        // rem = ny - nrows*(nprocs_col-1) 
-        // rem-1= ny - nrows*(nprocs_col-1) -1
+        // // Carlota usa myrows: rem-1
+        // // rem = ny - nrows*(nprocs_col-1) 
+        // // rem-1= ny - nrows*(nprocs_col-1) -1
 
-        // Colunas
-        int ncols_temp = (int)((nx-2)/2);
-        for (int i = 0; i < nprocs_col; i++)
-        {
-            // listfirstcol[2*i] = 1;
-            // listmycols[2*i] = ncols_temp;
-            // listfirstcol[2*i+1] = ncols_temp + 1;
-            // listmycols[2*i+1] = nx - 2 - ncols_temp;
-            listfirstcol[2*i] = 0;
-            listmycols[2*i] = ncols_temp + 1;
-            listfirstcol[2*i+1] = ncols_temp + 1;
-            listmycols[2*i+1] = nx - 1 - ncols_temp;
+        // // Colunas
+        // int ncols_temp = (int)((nx-2)/2);
+        // for (int i = 0; i < nprocs_col; i++)
+        // {
+        //     // listfirstcol[2*i] = 1;
+        //     // listmycols[2*i] = ncols_temp;
+        //     // listfirstcol[2*i+1] = ncols_temp + 1;
+        //     // listmycols[2*i+1] = nx - 2 - ncols_temp;
+        //     listfirstcol[2*i] = 0;
+        //     listmycols[2*i] = ncols_temp + 1;
+        //     listfirstcol[2*i+1] = ncols_temp + 1;
+        //     listmycols[2*i+1] = nx - 1 - ncols_temp;
+        // }
+
+        int numrows = (int)(((double)2*(nx-2)/nprocs) + 0.5);
+        int remaining = nx;
+        int listfirstrow[nprocs], listmyrows[nprocs];
+        for (int i=0; i<nprocs-2; i+=2) {
+            listmyrows[i] = numrows + 1;
+            listmyrows[i+1] = numrows + 1;
+            listfirstrow[i] = nx - remaining;
+            listfirstrow[i+1] = nx - remaining;
+            remaining += -numrows;
+            
+        }
+        listmyrows[nprocs-2] = remaining-1;
+        listmyrows[nprocs-1] = remaining-1;
+        listfirstrow[nprocs-2] = nx - remaining + 1;
+        listfirstrow[nprocs-1] = nx - remaining + 1;
+        
+        int listfirstcol[nprocs], listmycols[nprocs];
+        for (int i=0; i<nprocs; i+=2) {
+            listfirstcol[i] = 0;
+            listmycols[i] = (ny-2)/2 + 1;
+            listfirstcol[i+1] = (ny-2)/2 + 1;
+            listmycols[i+1] = ny - listmycols[i];
+           // printf("%d %d mylc %d myrc %d \n",nprocs,i , listfirstcols[i], listfirstcols[i]+listmycols[i]-1);
+           // printf("%d %d mylc %d myrc %d \n",nprocs,i+1 , listfirstcols[i+1], listfirstcols[i+1]+listmycols[i+1]-1);
+            
         }
 
         MPI_Scatter(listfirstrow, 1, MPI_INT, &firstrow, 1, MPI_INT, newid, comm2D);
