@@ -4,7 +4,6 @@
 // Gustavo Morais 92978
 
 // d)
-
 // O  método  de  relaxação  de  Gauss-Seidel  é  uma  alternativa  ao  método  de  Jacobi,  que 
 // converge mais rapidamente para a solução.  Trata-se de numa modificação do método de Jacobi 
 // que consiste na utilização dos valores mais recentes que estiverem disponíveis em cada momento. 
@@ -85,9 +84,8 @@ int main(int argc, char *argv[])
     
     if (myid == manager_rank)
     {
-        // printf("Introduza numero de pontos {max %d, 0 para sair}: \n",NXMAX);
-        // scanf(" %d", &nx);
-        nx = 100; // standard
+        printf("Introduza numero de pontos {max %d, 0 para sair}: \n",NXMAX);
+        scanf(" %d", &nx);
     }
     MPI_Bcast(&nx, 1, MPI_INT, 0, MPI_COMM_WORLD);
     ny = nx;
@@ -98,7 +96,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (nx > NXMAX)
+    if (nx < 0 || nx > NXMAX)
     {
         MPI_Finalize();
         return 1;
@@ -126,7 +124,6 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(comm2D, &newid);
 
     MPI_Cart_shift(comm2D, 0, 1, &nbrbottom , &nbrtop);
-    // MPI_Cart_shift(comm2D, 0, 1, &nbrtop , &nbrbottom);
     MPI_Cart_shift(comm2D, 1, 1, &nbrleft , &nbrright);
 
     printf("myid=%d, newid=%d, bot=%d, top=%d, left=%d, right=%d\n", myid, newid, nbrbottom, nbrtop, nbrleft, nbrright);   
@@ -153,7 +150,6 @@ int main(int argc, char *argv[])
             listmyrows[2*i+1] = nrows+1;
         }
         // Altera o numero de linhas do penultimo e do ultimo
-        // Agora inclui mais 1 linha
         listmyrows[nprocs-2] = ny - (nprocs_col - 1) * nrows;
         listmyrows[nprocs-1] = ny - (nprocs_col - 1) * nrows;
 
@@ -183,7 +179,7 @@ int main(int argc, char *argv[])
         MPI_Scatter(MPI_BOTTOM, 1, MPI_INT, &mycols, 1, MPI_INT, manager_rank, comm2D);
     }
 
-    // MPI_Barrier(comm2D);
+    MPI_Barrier(comm2D);
     printf("newid=%d, firstrow=%d, lastrow=%d, firstcol=%d, lastcol=%d\n", newid, firstrow, firstrow+myrows-1, firstcol, firstcol+mycols-1);
 
 
@@ -214,12 +210,12 @@ int main(int argc, char *argv[])
         double sums[2] = {0.0, 0.0};
         double global_sums[2];
 
-        // Calculos pares 
+        // Calculos pares (i+j é par)
         for (int i = 1; i < myrows + 1; i++)
         {
             for (int j = 1; j < mycols + 1 ; j++)
             {
-                if (((firstcol + j - 1)  + (firstrow + i - 1)) %2 == 0)
+                if (((firstcol + j - 1)  + (firstrow + i - 1)) %2 == 0) // verifca que é par
                 {
                     Vnew[i][j] = (Vnew[i+1][j] + Vnew[i-1][j] + Vnew[i][j+1] + Vnew[i][j-1]  - h * h  * myf[i][j]) / 4.0;
                     sums[0] += (Vnew[i][j] - Vold[i][j]) * (Vnew[i][j] - Vold[i][j]);
@@ -228,21 +224,22 @@ int main(int argc, char *argv[])
             }  
         }
 
-        // Comunicar aos vizinhos
+        // Comunicar aos vizinhos (pares para ímpares)
         MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrbottom, 4, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrtop, 4, comm2D, MPI_STATUS_IGNORE);
-        // MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrtop, 4, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrbottom, 4, comm2D, MPI_STATUS_IGNORE);
+        
         MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrtop, 5, &Vnew[0][1], mycols, MPI_DOUBLE, nbrbottom, 5, comm2D, MPI_STATUS_IGNORE);
-        // MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrbottom, 5, &Vnew[0][1], mycols, MPI_DOUBLE, nbrtop, 5, comm2D, MPI_STATUS_IGNORE);
+        
         MPI_Sendrecv(&Vnew[1][1], 1, column, nbrleft, 6, &Vnew[1][mycols+1], 1, column, nbrright, 6, comm2D, MPI_STATUS_IGNORE);
+        
         MPI_Sendrecv(&Vnew[1][mycols], 1, column, nbrright, 7, &Vnew[1][0], 1, column, nbrleft, 7, comm2D, MPI_STATUS_IGNORE);
 
        
-        // Calcular ímpares
+        // Calcular ímpares (i+j é ímpar)
         for (int i = 1; i < myrows + 1; i++)
         {
             for (int j = 1; j < mycols + 1 ; j++)
             {
-                if (((firstcol + j - 1)  + (firstrow + i - 1)) %2 == 1)
+                if (((firstcol + j - 1)  + (firstrow + i - 1)) %2 == 1) // verifca que é impar
                 {
                     Vnew[i][j] = (Vnew[i-1][j] + Vnew[i][j-1] + Vnew[i][j+1] + Vnew[i+1][j] - h * h * myf[i][j]) / 4.0 ;
                     sums[0] += (Vnew[i][j]-Vold[i][j])*(Vnew[i][j]-Vold[i][j]);
@@ -251,12 +248,13 @@ int main(int argc, char *argv[])
             }
         }
 
-        // Comunicar aos vizinhos 
+        // Comunicar aos vizinhos (ímpares para pares)
         MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrbottom, 8, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrtop, 8, comm2D, MPI_STATUS_IGNORE);
-        // MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrtop, 8, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrbottom, 8, comm2D, MPI_STATUS_IGNORE);
+        
         MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrtop, 9, &Vnew[0][1], mycols, MPI_DOUBLE, nbrbottom, 9, comm2D, MPI_STATUS_IGNORE);
-        // MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrbottom, 9, &Vnew[0][1], mycols, MPI_DOUBLE, nbrtop, 9, comm2D, MPI_STATUS_IGNORE);
+        
         MPI_Sendrecv(&Vnew[1][1], 1, column, nbrleft, 10, &Vnew[1][mycols+1], 1, column, nbrright, 10, comm2D, MPI_STATUS_IGNORE);
+        
         MPI_Sendrecv(&Vnew[1][mycols], 1, column, nbrright, 11, &Vnew[1][0], 1, column, nbrleft, 11, comm2D, MPI_STATUS_IGNORE);
 
 
@@ -278,7 +276,6 @@ int main(int argc, char *argv[])
             MPI_Type_create_subarray(2, gsizes, lsizes, start_ind, MPI_ORDER_C, MPI_DOUBLE, &filetype);
             MPI_Type_commit(&filetype);
           
-            // Criar novo datatype para enviar apenas pontos locais pelos quais é responsável (não queremos enviar pontos fantasma)
             int memsizes[2] = {myrows+2, mycols+2};
             start_ind[0] = 1;
             start_ind[1] = newid % 2;
@@ -311,11 +308,9 @@ int main(int argc, char *argv[])
 
         // comunicações sentido ascendente
         MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[0] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
-        // MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
         
         // comunicações sentido descendente
         MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
-        // MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[0] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
         
         // comunicações sentido para direita
         MPI_Sendrecv(&(Vnew[0][mycols]), 1, column, nbrright, 2, &(Vnew[0][0]), 1, column, nbrleft, 2, comm2D, MPI_STATUS_IGNORE);

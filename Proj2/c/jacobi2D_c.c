@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
     MPI_Barrier(comm2D);
     printf("newid=%d, firstrow=%d, lastrow=%d, firstcol=%d, lastcol=%d\n", newid, firstrow, firstrow+myrows-1, firstcol, firstcol+mycols-1);
 
-    // ALterado para usar mais 2 colunas e linhas fantasma, necesário para o maior stencil
+    // ALterado para usar mais 2 colunas e linhas fantasma, necesário para o maior estêncil
     double (*Vold)[mycols+4], (*Vnew)[mycols+4], (*myf)[mycols+4];
     Vold = calloc(myrows + 4, sizeof(*Vold));
     Vnew = calloc(myrows + 4, sizeof(*Vnew));
@@ -188,7 +188,8 @@ int main(int argc, char *argv[])
         double sums[2] = {0.0, 0.0};
         double global_sums[2];
 
-        // dominio principal agora nao inclui as 2 primeiras e 2 ultimas linhas e colunas
+        // Dominio principal agora nao inclui as 2 primeiras e 2 ultimas linhas e colunas
+        // Alterado para usar o novo estêncil e nova equação iterativa
         for (int j = 2; j < mycols + 2 ; j++)
         {
             for (int i = 2; i < myrows + 2; i++)
