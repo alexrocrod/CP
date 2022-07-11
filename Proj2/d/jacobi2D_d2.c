@@ -157,19 +157,24 @@ int main(int argc, char *argv[])
             // listmyrows[2*i+1] = nrows + 1;
             
             // listfirstrow[2*i] = 1 + i *  nrows;
-            listfirstrow[2*i] = i *  (nrows+1);
-            listmyrows[2*i] = nrows + 1;
-            // listfirstrow[2*i+1] = 1 + i *  nrows;
-            listfirstrow[2*i+1] = i *  (nrows+1);
-            listmyrows[2*i+1] = nrows + 1;
+            // listfirstrow[2*i] = i *  (nrows+1);
+            // listmyrows[2*i] = nrows + 1;
+            // // listfirstrow[2*i+1] = 1 + i *  nrows;
+            // listfirstrow[2*i+1] = i *  (nrows+1);
+            // listmyrows[2*i+1] = nrows + 1;
+
+            listfirstrow[2*i] = i *  (nrows);
+            listmyrows[2*i] = nrows+1;
+            listfirstrow[2*i+1] = i *  (nrows);
+            listmyrows[2*i+1] = nrows+1;
         }
         // Altera o numero de linhas do penultimo e do ultimo
         // listmyrows[nprocs-2] = ny - 2 - (nprocs_col - 1) * nrows;
         // listmyrows[nprocs-1] = ny - 2 - (nprocs_col - 1) * nrows;
 
         // Agora inclui mais 1 linha
-        listmyrows[nprocs-2] = ny - 1 - (nprocs_col - 1) * nrows;
-        listmyrows[nprocs-1] = ny - 1 - (nprocs_col - 1) * nrows;
+        listmyrows[nprocs-2] = ny - (nprocs_col - 1) * nrows;
+        listmyrows[nprocs-1] = ny - (nprocs_col - 1) * nrows;
         
         // Carlota usa myrows: rem-1
         // rem = ny - nrows*(nprocs_col-1) 
@@ -261,8 +266,10 @@ int main(int argc, char *argv[])
         }
 
         // Comunicar aos vizinhos
-        MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrtop, 0, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
-        MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrbottom, 1, &Vnew[0][1], mycols, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrbottom, 0, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrtop, 0, comm2D, MPI_STATUS_IGNORE);
+        // MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrtop, 0, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrtop, 1, &Vnew[0][1], mycols, MPI_DOUBLE, nbrbottom, 1, comm2D, MPI_STATUS_IGNORE);
+        // MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrbottom, 1, &Vnew[0][1], mycols, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
         MPI_Sendrecv(&Vnew[1][1], 1, column, nbrleft, 2, &Vnew[1][mycols+1], 1, column, nbrright, 2, comm2D, MPI_STATUS_IGNORE);
         MPI_Sendrecv(&Vnew[1][mycols], 1, column, nbrright, 3, &Vnew[1][0], 1, column, nbrleft, 3, comm2D, MPI_STATUS_IGNORE);
 
@@ -291,8 +298,10 @@ int main(int argc, char *argv[])
         }
 
         // Comunicar aos vizinhos 
-        MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrtop, 4, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrbottom, 4, comm2D, MPI_STATUS_IGNORE);
-        MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrbottom, 5, &Vnew[0][1], mycols, MPI_DOUBLE, nbrtop, 5, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrbottom, 4, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrtop, 4, comm2D, MPI_STATUS_IGNORE);
+        // MPI_Sendrecv(&Vnew[1][1], mycols, MPI_DOUBLE, nbrtop, 4, &Vnew[myrows+1][1], mycols, MPI_DOUBLE, nbrbottom, 4, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrtop, 5, &Vnew[0][1], mycols, MPI_DOUBLE, nbrbottom, 5, comm2D, MPI_STATUS_IGNORE);
+        // MPI_Sendrecv(&Vnew[myrows][1], mycols, MPI_DOUBLE, nbrbottom, 5, &Vnew[0][1], mycols, MPI_DOUBLE, nbrtop, 5, comm2D, MPI_STATUS_IGNORE);
         MPI_Sendrecv(&Vnew[1][1], 1, column, nbrleft, 6, &Vnew[1][mycols+1], 1, column, nbrright, 6, comm2D, MPI_STATUS_IGNORE);
         MPI_Sendrecv(&Vnew[1][mycols], 1, column, nbrright, 7, &Vnew[1][0], 1, column, nbrleft, 7, comm2D, MPI_STATUS_IGNORE);
 
@@ -358,12 +367,12 @@ int main(int argc, char *argv[])
         }
 
         // comunicações sentido ascendente
-        // MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[0] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
-        MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[0] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
+        // MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
         
         // comunicações sentido descendente
-        // MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
-        MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[0] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
+        MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
+        // MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[0] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
         
         // comunicações sentido para direita
         MPI_Sendrecv(&(Vnew[0][mycols]), 1, column, nbrright, 2, &(Vnew[0][0]), 1, column, nbrleft, 2, comm2D, MPI_STATUS_IGNORE);
