@@ -39,9 +39,8 @@ int main(int argc, char *argv[])
     
     if (myid == manager_rank)
     {
-        // printf("Introduza numero de pontos {max %d, 0 para sair}: \n",NXMAX);
-        // scanf(" %d", &nx);
-        nx = 100; // standard
+        printf("Introduza numero de pontos {max %d, 0 para sair}: \n",NXMAX);
+        scanf(" %d", &nx);
     }
     MPI_Bcast(&nx, 1, MPI_INT, manager_rank, MPI_COMM_WORLD);
     ny = nx;
