@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (nx > NXMAX)
+    if (nx < 0 || nx > NXMAX)
     {
         MPI_Finalize();
         return 1;
@@ -239,7 +239,6 @@ int main(int argc, char *argv[])
             MPI_Type_create_subarray(2, gsizes, lsizes, start_ind, MPI_ORDER_C, MPI_DOUBLE, &filetype);
             MPI_Type_commit(&filetype);
           
-            // Criar novo datatype para enviar apenas pontos locais pelos quais é responsável (não queremos enviar pontos fantasma)
             int memsizes[2] = {myrows+2, mycols+2};
             start_ind[0] = 1;
             start_ind[1] = newid % 2;
@@ -255,7 +254,6 @@ int main(int argc, char *argv[])
             MPI_File_open(comm2D, "results_a.bin", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fp);
             MPI_File_set_view(fp, 0, MPI_DOUBLE, filetype, "native", MPI_INFO_NULL);
             
-            // Escrever ficheiro binário
             MPI_File_write_all(fp, Vnew, 1, memtype, MPI_STATUS_IGNORE);
             MPI_File_close(&fp);
 

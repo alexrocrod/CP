@@ -47,9 +47,8 @@ int main(int argc, char *argv[])
     
     if (myid == manager_rank)
     {
-        // printf("Introduza numero de pontos {max %d, 0 para sair}: \n",NXMAX);
-        // scanf(" %d", &nx);
-        nx = 100; // standard
+        printf("Introduza numero de pontos {max %d, 0 para sair}: \n",NXMAX);
+        scanf(" %d", &nx);
     }
     MPI_Bcast(&nx, 1, MPI_INT, 0, MPI_COMM_WORLD);
     ny = nx;
@@ -60,7 +59,7 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    if (nx > NXMAX)
+    if (nx < 0 || nx > NXMAX)
     {
         MPI_Finalize();
         return 1;
@@ -68,9 +67,9 @@ int main(int argc, char *argv[])
 
     int nprocs_col = (int) nprocs/2;
 
-    // DONE-TODO: Adaptar para periodic
     int ndims = 2;
     int dims[2] = {nprocs_col, 2};
+    // Alterado para ativar as fronteiras periódicas
     int periodic[2] = {1,1};
     MPI_Comm comm2D;
     int newid;
@@ -89,7 +88,6 @@ int main(int argc, char *argv[])
     MPI_Comm_rank(comm2D, &newid);
 
     MPI_Cart_shift(comm2D, 0, 1, &nbrbottom , &nbrtop);
-    // MPI_Cart_shift(comm2D, 0, 1, &nbrtop , &nbrbottom);
     MPI_Cart_shift(comm2D, 1, 1, &nbrleft , &nbrright);
 
     printf("myid=%d, newid=%d, bot=%d, top=%d, left=%d, right=%d\n", myid, newid, nbrbottom, nbrtop, nbrleft, nbrright);   
@@ -108,20 +106,21 @@ int main(int argc, char *argv[])
         int nrows = (int)((double)(ny-2)/(double)nprocs_col + 0.5);
         
         // Linhas
+        // Alterado para incluir as linhas de fronteira
         for (int i = 0; i < nprocs_col; i++)
         {
             listfirstrow[2*i] = i *  (nrows);
-            listmyrows[2*i] = nrows+1;
+            listmyrows[2*i] = nrows+1; 
             listfirstrow[2*i+1] = i *  (nrows);
             listmyrows[2*i+1] = nrows+1;
         }
         // Altera o numero de linhas do penultimo e do ultimo
-        // Agora inclui mais 1 linha
         listmyrows[nprocs-2] = ny - (nprocs_col - 1) * nrows;
         listmyrows[nprocs-1] = ny - (nprocs_col - 1) * nrows;
         
 
         // Colunas
+        // Alterado para incluir as colunas de fronteira
         int ncols_temp = (int)((nx-2)/2);
         for (int i = 0; i < nprocs_col; i++)
         {
@@ -147,7 +146,7 @@ int main(int argc, char *argv[])
         MPI_Scatter(MPI_BOTTOM, 1, MPI_INT, &mycols, 1, MPI_INT, manager_rank, comm2D);
     }
 
-    // MPI_Barrier(comm2D);
+    MPI_Barrier(comm2D);
     printf("newid=%d, firstrow=%d, lastrow=%d, firstcol=%d, lastcol=%d\n", newid, firstrow, firstrow+myrows-1, firstcol, firstcol+mycols-1);
 
 
@@ -166,6 +165,8 @@ int main(int argc, char *argv[])
         }
         
     }
+
+    // Os ciclos para definir os valores nas fronteiras foram removidos
 
     MPI_Datatype column;
     MPI_Type_vector(myrows + 2, 1, mycols + 2 , MPI_DOUBLE, &column);
@@ -199,15 +200,16 @@ int main(int argc, char *argv[])
                 tm1 = MPI_Wtime();
             }
 
+            // Agora nao é necessario ter em conta as colunas fantasmas
+            // Isto torna o calculo de lsizes e start_ind mais fácil (sem verificações extras)
             int gsizes[2] = {ny, nx};
-            int lsizes[2] = {myrows, mycols};
+            int lsizes[2] = {myrows, mycols}; 
             int start_ind[2] = {firstrow, firstcol};
 
             MPI_Datatype filetype;
             MPI_Type_create_subarray(2, gsizes, lsizes, start_ind, MPI_ORDER_C, MPI_DOUBLE, &filetype);
             MPI_Type_commit(&filetype);
           
-            // Criar novo datatype para enviar apenas pontos locais pelos quais é responsável (não queremos enviar pontos fantasma)
             int memsizes[2] = {myrows+2, mycols+2};
             start_ind[0] = 1;
             start_ind[1] = newid % 2;
@@ -223,7 +225,6 @@ int main(int argc, char *argv[])
             MPI_File_open(comm2D, "results_b.bin", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fp);
             MPI_File_set_view(fp, 0, MPI_DOUBLE, filetype, "native", MPI_INFO_NULL);
             
-            // Escrever ficheiro binário
             MPI_File_write_all(fp, Vnew, 1, memtype, MPI_STATUS_IGNORE);
             MPI_File_close(&fp);
 
@@ -240,11 +241,9 @@ int main(int argc, char *argv[])
 
         // comunicações sentido ascendente
         MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[0] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
-        // MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrtop, 0, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrbottom, 0, comm2D, MPI_STATUS_IGNORE);
         
         // comunicações sentido descendente
         MPI_Sendrecv(Vnew[1], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[myrows+1] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
-        // MPI_Sendrecv(Vnew[myrows], mycols+2, MPI_DOUBLE, nbrbottom, 1, Vnew[0] , mycols+2, MPI_DOUBLE, nbrtop, 1, comm2D, MPI_STATUS_IGNORE);
         
         // comunicações sentido para direita
         MPI_Sendrecv(&(Vnew[0][mycols]), 1, column, nbrright, 2, &(Vnew[0][0]), 1, column, nbrleft, 2, comm2D, MPI_STATUS_IGNORE);
