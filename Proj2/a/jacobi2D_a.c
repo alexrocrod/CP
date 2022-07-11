@@ -4,8 +4,6 @@
 // Gustavo Morais 92978
 
 // a)
-
-// TODO:
 // incorporar as seguintes condições fronteira: 𝑉(−1,𝑦)=(1+𝑦)/4, 𝑉(𝑥,−1)=(1+𝑥)/4, 𝑉(𝑥,1)=(3+𝑥)/4 e 𝑉(1,𝑦)=(3+𝑦)/4. 
 
 #include <mpi.h>
@@ -13,13 +11,12 @@
 #include <stdio.h>
 #include <math.h>
 
-// #define min(a,b) (((a)<(b))?(a):(b))
-
 #define MAXIT 500000
 #define NXMAX 500
 #define L 1.0
 #define TOL 1e-6
 
+// Função alterada para a pretendida no projeto
 double f(double x, double y)
 {
     return 7*sin(2*M_PI*x)*cos(3*M_PI*x)*sin(2*M_PI*y)*cos(3*M_PI*y);
@@ -157,6 +154,8 @@ int main(int argc, char *argv[])
         
     }
 
+    // Início das alterações
+    // Estes 4 fors foram alterados para ter em conta as condições de fronteira
     if (newid == manager_rank || newid == 1){ // y = -L,  V(x,-1)
         for (int j = 0; j < mycols+2; j++)
         {
@@ -189,6 +188,7 @@ int main(int argc, char *argv[])
             Vold[i][mycols+1] = Vnew[i][mycols+1];
         } 
     }
+    // Fim das alterações
 
     MPI_Datatype column;
     MPI_Type_vector(myrows + 2, 1, mycols + 2 , MPI_DOUBLE, &column);
