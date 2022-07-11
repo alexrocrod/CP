@@ -172,8 +172,7 @@ int main(int argc, char *argv[])
         for (int i = 2; i < myrows + 2; i++)
         {
             myf[i][j] = f(-L + (firstcol + j - 2) * h, -L + (firstrow + i - 2) * h);
-        }
-        
+        }    
     }
 
     // Alterado para + 4
@@ -236,7 +235,6 @@ int main(int argc, char *argv[])
             MPI_File_open(comm2D, "results_c.bin", MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fp);
             MPI_File_set_view(fp, 0, MPI_DOUBLE, filetype, "native", MPI_INFO_NULL);
             
-            // Escrever ficheiro binário
             MPI_File_write_all(fp, Vnew, 1, memtype, MPI_STATUS_IGNORE);
             MPI_File_close(&fp);
 

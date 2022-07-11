@@ -156,22 +156,6 @@ int main(int argc, char *argv[])
 
     // Início das alterações
     // Estes 4 fors foram alterados para ter em conta as condições de fronteira
-    if (newid == manager_rank || newid == 1){ // y = -L,  V(x,-1)
-        for (int j = 0; j < mycols+2; j++)
-        {
-            Vnew[0][j] = (1 + (-L + h*(firstcol+j-1)))/4;
-            Vold[0][j] = Vnew[0][j];
-        }
-    }
-
-    if (newid == nprocs - 2 || newid == nprocs - 1){ // y = L,  V(x,1)
-        for (int j = 0; j < mycols + 2; j++)
-        {
-            Vnew[myrows+1][j] = (3 + (-L + h*(firstcol+j-1)))/4;
-            Vold[myrows+1][j] = Vnew[myrows+1][j];
-        }
-    }
-
     if (newid % 2 == 0)
     {
         for (int i = 1; i < myrows + 1; i++) // x = -L,  V(-1,y)
@@ -187,6 +171,22 @@ int main(int argc, char *argv[])
             Vnew[i][mycols+1] = (3 + (-L + h*(firstrow+i-1)) )/4;
             Vold[i][mycols+1] = Vnew[i][mycols+1];
         } 
+    }
+
+    if (newid == manager_rank || newid == 1){ // y = -L,  V(x,-1)
+        for (int j = 0; j < mycols+2; j++)
+        {
+            Vnew[0][j] = (1 + (-L + h*(firstcol+j-1)))/4;
+            Vold[0][j] = Vnew[0][j];
+        }
+    }
+
+    if (newid == nprocs - 2 || newid == nprocs - 1){ // y = L,  V(x,1)
+        for (int j = 0; j < mycols + 2; j++)
+        {
+            Vnew[myrows+1][j] = (3 + (-L + h*(firstcol+j-1)))/4;
+            Vold[myrows+1][j] = Vnew[myrows+1][j];
+        }
     }
     // Fim das alterações
 
