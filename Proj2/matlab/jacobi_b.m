@@ -22,7 +22,7 @@ Vold=zeros(N,N);
 
 
 %% 
-
+tic
 for k = 1:maxit
     Vnew = Vold;
     for i = 1:N
@@ -42,7 +42,7 @@ for k = 1:maxit
     end
 	Vold=Vnew;
 end 
-
+toc
 %%
 figure;
 mesh(x,y,Vnew)

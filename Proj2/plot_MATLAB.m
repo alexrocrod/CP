@@ -8,18 +8,12 @@ nx=100;
 ny=nx;
 
 % alinea = 'a';
-alinea = 'b';
+% alinea = 'b';
 % alinea = 'c';
-% alinea = 'd';
+alinea = 'd';
 
-% C = false;
-% C = true;
 
 f = [alinea '/results_' alinea '.bin'];
-
-% if (C)
-%     f = [alinea '/results_' alinea '_C.bin'];
-% end
 
 fileID = fopen(f);
 
@@ -33,13 +27,6 @@ L=1;
 x=linspace(-L,L,nx);
 y=linspace(-L,L,ny);
 
-% figure
-% mesh(x,y,array_MPI)
-% xlim([-L L])
-% ylim([-L L])
-% xlabel('\it{x}')
-% ylabel('\it{y}')
-% title('array\_MPI (no)')
 fprintf("erro: %d\n",getMSE(Vnew,array_MPI));
 
 figure
@@ -52,18 +39,9 @@ title('array\_MPI')
 fprintf("erro trans: %d\n",getMSE(Vnew,array_MPI'));
 
 i = [alinea,'/img', upper(alinea), '.jpg'];
-% if (C)
-%     i = [alinea,'/img', upper(alinea), '_C.jpg'];
-% end
+
 saveas(gcf,i)
 
-% figure
-% mesh(x,y,rot90(array_MPI))
-% xlim([-L L])
-% ylim([-L L])
-% xlabel('\it{x}')
-% ylabel('\it{y}')
-% title('array\_MPI rot90')
 fprintf("erro rot90: %d\n",getMSE(Vnew,rot90(array_MPI)));
 
 %%
@@ -82,7 +60,6 @@ title('array\_Matlab')
 function MSE = getMSE(Vnew,array_MPI)
 
     N2 = 100*100;
-    
     
 %     matNorm = Vnew./max(Vnew,[],'all');
 %     MPINorm = array_MPI./max(array_MPI,[],'all');

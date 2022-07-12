@@ -26,7 +26,7 @@ Vold(end,:) = (3 + x)./4;
 Vold(:,end) = (3 + y)./4;
 
 %% 
-
+tic
 for k = 1:maxit
     Vnew = Vold;
     for i = 2:N-1
@@ -46,6 +46,7 @@ for k = 1:maxit
     end
 	Vold=Vnew;
 end 
+toc
 
 %%
 figure;
