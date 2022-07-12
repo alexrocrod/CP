@@ -2,22 +2,24 @@ clc
 clear all
 close all
 
+%% 
+
 nx=100;
 ny=nx;
 
 % alinea = 'a';
-% alinea = 'b';
+alinea = 'b';
 % alinea = 'c';
-alinea = 'd';
+% alinea = 'd';
 
-C = false;
+% C = false;
 % C = true;
 
 f = [alinea '/results_' alinea '.bin'];
 
-if (C)
-    f = [alinea '/results_' alinea '_C.bin'];
-end
+% if (C)
+%     f = [alinea '/results_' alinea '_C.bin'];
+% end
 
 fileID = fopen(f);
 
@@ -50,9 +52,9 @@ title('array\_MPI')
 fprintf("erro trans: %d\n",getMSE(Vnew,array_MPI'));
 
 i = [alinea,'/img', upper(alinea), '.jpg'];
-if (C)
-    i = [alinea,'/img', upper(alinea), '_C.jpg'];
-end
+% if (C)
+%     i = [alinea,'/img', upper(alinea), '_C.jpg'];
+% end
 saveas(gcf,i)
 
 % figure
@@ -81,10 +83,12 @@ function MSE = getMSE(Vnew,array_MPI)
 
     N2 = 100*100;
     
-    % array_MPI = rot90(array_MPI);
     
-    matNorm = Vnew./max(Vnew,[],'all');
-    MPINorm = array_MPI./max(array_MPI,[],'all');
+%     matNorm = Vnew./max(Vnew,[],'all');
+%     MPINorm = array_MPI./max(array_MPI,[],'all');
+
+    matNorm = Vnew;
+    MPINorm = array_MPI;
     
     MSE = 1/N2 * sum((MPINorm-matNorm).^2,'all');
 end
