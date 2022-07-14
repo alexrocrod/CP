@@ -13,9 +13,8 @@ x = linspace(-L,L,nx);
 y = linspace(-L,L,ny);
 
 
-% h = 2/nx;
-% h = 2/(nx-1);
-h = x(2)-x(1); 
+h = 2/nx;
+% h = x(2)-x(1); 
 
 N = nx;
 Vold=zeros(N,N);
@@ -32,8 +31,6 @@ for k = 1:maxit
             [i0,i1,j0,j1] = getIJ(i,j,N);
 
              Vnew(i,j)= 0.25*(Vold(i0,j)+Vold(i1,j)+Vold(i,j0)+Vold(i,j1)-h^2*f);
-
-%             Vnew(i,j)= 0.25*(Vnew(i1,j)+Vnew(i0,j)+Vnew(i,j1)+Vnew(i,j0)-h^2*f);
         end
     end
     diff = sqrt(sum(sum((Vnew - Vold).^2))) / sqrt(sum(sum(Vnew.^2)));
@@ -52,17 +49,10 @@ xlabel('\it{x}')
 ylabel('\it{y}')
 title('array\_MATLAB')
 
-saveas(gcf,"jac_b.jpg")
+saveas(gcf,"jac_mat_b.jpg")
 
-save("..\b\vnewMat.mat","Vnew")
+save("vnewMat_b.mat","Vnew")
 
-%%
-% clc
-% i=100;
-% j=1;
-% [i0,i1,j0,j1] = getIJ(i,j,N);
-% [i0,i,i1]
-% [j0,j,j1]
 
 %%
 function [i0,i1,j0,j1] = getIJ(i,j,N)

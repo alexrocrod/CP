@@ -13,21 +13,19 @@ ny=nx;
 alinea = 'd';
 
 
-f = [alinea '/results_' alinea '.bin'];
+f = ['../results_' alinea '.bin'];
 
 fileID = fopen(f);
 
 array_MPI = fread(fileID, [ny nx],'double');
 fclose(fileID);
 
-fexact = [alinea '/vnewMat.mat'];
+fexact = ['vnewMat_' alinea '.mat'];
 load(fexact)
 
 L=1;
 x=linspace(-L,L,nx);
 y=linspace(-L,L,ny);
-
-fprintf("erro: %d\n",getMSE(Vnew,array_MPI));
 
 figure
 mesh(x,y,array_MPI')
@@ -36,14 +34,11 @@ ylim([-L L])
 xlabel('\it{x}')
 ylabel('\it{y}')
 title('array\_MPI')
-fprintf("erro trans: %d\n",getMSE(Vnew,array_MPI'));
+fprintf("MSE: %d\n",getMSE(Vnew,array_MPI',nx));
 
-i = [alinea,'/img', upper(alinea), '.jpg'];
+i = ['../img', upper(alinea), '.jpg'];
 
 saveas(gcf,i)
-
-fprintf("erro rot90: %d\n",getMSE(Vnew,rot90(array_MPI)));
-
 %%
 
 figure
@@ -57,17 +52,11 @@ title('array\_Matlab')
 
 %%
 
-function MSE = getMSE(Vnew,array_MPI)
+function MSE = getMSE(Vnew,array_MPI,nx)
 
-    N2 = 100*100;
+    N2 = nx*nx;
     
-%     matNorm = Vnew./max(Vnew,[],'all');
-%     MPINorm = array_MPI./max(array_MPI,[],'all');
-
-    matNorm = Vnew;
-    MPINorm = array_MPI;
-    
-    MSE = 1/N2 * sum((MPINorm-matNorm).^2,'all');
+    MSE = 1/N2 * sum((array_MPI-Vnew).^2,'all');
 end
 
 

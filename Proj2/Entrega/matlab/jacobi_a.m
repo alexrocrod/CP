@@ -13,8 +13,8 @@ x = linspace(-L,L,nx);
 y = linspace(-L,L,ny);
 
 
-% h = 2/nx;
-h = x(2)-x(1);
+h = 2/(nx-1);
+% h = x(2)-x(1);
 
 N = nx;
 Vold = zeros(N,N);
@@ -35,8 +35,6 @@ for k = 1:maxit
             f = 7*sin(2*pi*x(i))*cos(3*pi*x(i))*sin(2*pi*y(j))*cos(3*pi*y(j));  
 
             Vnew(i,j)= 0.25*(Vold(i+1,j)+Vold(i-1,j)+Vold(i,j+1)+Vold(i,j-1)-h^2*f);
-
-%             Vnew(i,j)= 0.25*(Vnew(i1,j)+Vnew(i0,j)+Vnew(i,j1)+Vnew(i,j0)-h^2*f);
         end
     end
     
@@ -57,6 +55,6 @@ xlabel('\it{x}')
 ylabel('\it{y}')
 title('array\_MATLAB')
 
-saveas(gcf,"jac_a.jpg")
+saveas(gcf,"jac_mat_a.jpg")
 
-save("..\a\vnewMat.mat","Vnew")
+save("vnewMat_a.mat","Vnew")

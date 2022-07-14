@@ -12,9 +12,8 @@ L = 1;
 x = linspace(-L,L,nx);
 y = linspace(-L,L,ny);
 
-% h=0.025/L;
-% N=2/h+1;
 h = 2/nx;
+
 N = nx;
 Vold=zeros(N,N);
 
@@ -49,9 +48,9 @@ xlabel('\it{x}')
 ylabel('\it{y}')
 title('array\_MATLAB')
 
-saveas(gcf,"jac_d.jpg")
+saveas(gcf,"jac_mat_d.jpg")
 
-save("..\d\vnewMat.mat","Vnew")
+save("vnewMat_d.mat","Vnew")
 
 %%
 function [i00,i0,i1,i2,j00,j0,j1,j2] = getIJ(i,j,N)
