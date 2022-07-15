@@ -4,8 +4,6 @@
 // Gustavo Morais 92978
 
 // c)
-
-// TODO:
 // A aproximação por diferenças finitas usada na alínea anterior para as segundas derivadas 
 // corresponde a um estêncil de 5 pontos (o ponto (𝑖,𝑗) mais 4 vizinhos), que introduz um erro local 
 // da ordem de ℎ2. A ordem deste erro pode ser reduzida para ℎ4 usando um estêncil de 9 pontos, 

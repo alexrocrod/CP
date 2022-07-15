@@ -4,8 +4,6 @@
 // Gustavo Morais 92978
 
 // b)
-
-// TODO:
 // Adapte o programa para usar condições fronteira periódicas em ambas as direções, 𝑥 e 𝑦. 
 // Note que, com fronteiras periódicas, os valores 
 // 𝑉𝑖,𝑗 nas fronteiras do domínio não são fixados à partida, e têm de ser calculados da mesma forma 
