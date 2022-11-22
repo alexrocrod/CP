@@ -1,3 +1,2 @@
-# CP - Computação Paralela
-# Parallel Computing
-## Course Unit at Universidade de Aveiro
+# CP - Computação Paralela / Parallel Computing
+Course Unit at Universidade de Aveiro
